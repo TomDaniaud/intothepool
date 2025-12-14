@@ -2,6 +2,7 @@
 
 import { PanelLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 
 import { useSearchHistory } from "@/components/search-history-provider";
 import { Button } from "@/components/ui/button";
@@ -51,10 +52,38 @@ function formatRelativeTime(createdAt) {
 
 function SidebarBody() {
   const { items, activeId, removeSearch, setActiveId } = useSearchHistory();
+  const router = useRouter();
+  const pathname = usePathname();
 
   // L'item actif est celui sélectionné par l'utilisateur, ou le dernier ajouté.
   const value = activeId || items[0]?.id || "";
   const activeItem = items.find((x) => x.id === value) ?? null;
+
+  function handleSelectTab(id) {
+    setActiveId(id);
+    // Navigate to competition page when selecting a tab
+    if (pathname !== "/competition") {
+      router.push("/competition");
+    }
+  }
+
+  function handleRemoveTab(id) {
+    const isActive = id === value;
+    const remainingItems = items.filter((x) => x.id !== id);
+
+    removeSearch(id);
+
+    // Si on supprime l'onglet actif
+    if (isActive) {
+      if (remainingItems.length > 0) {
+        // Sélectionner le premier onglet restant
+        setActiveId(remainingItems[0].id);
+      } else {
+        // Plus d'onglets : retour à l'accueil
+        router.push("/");
+      }
+    }
+  }
 
   return (
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground w-full">
@@ -93,11 +122,11 @@ function SidebarBody() {
                   type="button"
                   className={
                     item.id === value
-                      ? "w-full truncate rounded-md bg-accent px-3 py-2 pr-10 text-left text-sm text-accent-foreground"
-                      : "w-full truncate rounded-md px-3 py-2 pr-10 text-left text-sm hover:bg-accent hover:text-accent-foreground"
+                      ? "w-full truncate rounded-md bg-accent px-3 py-2 pr-10 text-left text-sm text-accent-foreground cursor-pointer"
+                      : "w-full truncate rounded-md px-3 py-2 pr-10 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
                   }
                   title={item.label}
-                  onClick={() => setActiveId(item.id)}
+                  onClick={() => handleSelectTab(item.id)}
                 >
                   {item.label}
                 </button>
@@ -108,13 +137,13 @@ function SidebarBody() {
                   className={cn(
                     "absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2",
                     "opacity-0 transition-opacity group-hover:opacity-100",
-                    "hover:bg-accent hover:text-accent-foreground",
+                    "hover:bg-accent hover:text-accent-foreground cursor-pointer",
                     "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   )}
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    removeSearch(item.id);
+                    handleRemoveTab(item.id);
                   }}
                 >
                   <Trash2 className="size-4" />
@@ -165,32 +194,29 @@ function SidebarBody() {
  */
 export function Sidebar() {
   return (
-    <>
-      {/* Desktop */}
-      <aside className="hidden h-[100dvh] w-1/5 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:flex">
-        <SidebarBody />
-      </aside>
+    <aside className="hidden h-screen w-1/5 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:flex">
+      <SidebarBody />
+    </aside>
+  );
+}
 
-      {/* Mobile trigger + Sheet */}
-      <div className="fixed left-4 top-4 z-50 md:hidden">
-        <Sheet>
-          <SheetTrigger asChild>
-            <Button
-              variant="outline"
-              size="icon"
-              aria-label="Ouvrir l'historique"
-            >
-              <PanelLeft className="size-4" />
-            </Button>
-          </SheetTrigger>
-          <SheetContent side="left" className="w-80 p-0">
-            <SheetHeader className="sr-only">
-              <SheetTitle>Historique</SheetTitle>
-            </SheetHeader>
-            <SidebarBody />
-          </SheetContent>
-        </Sheet>
-      </div>
-    </>
+/**
+ * Sidebar mobile (Sheet) : le trigger est fourni par le parent (ex: header).
+ */
+export function MobileSidebarTrigger() {
+  return (
+    <Sheet>
+      <SheetTrigger asChild>
+        <Button variant="outline" size="icon" aria-label="Ouvrir l'historique">
+          <PanelLeft className="size-4" />
+        </Button>
+      </SheetTrigger>
+      <SheetContent side="left" className="w-80 p-0">
+        <SheetHeader className="sr-only">
+          <SheetTitle>Historique</SheetTitle>
+        </SheetHeader>
+        <SidebarBody />
+      </SheetContent>
+    </Sheet>
   );
 }

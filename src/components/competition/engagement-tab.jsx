@@ -126,14 +126,6 @@ function SeriesList({ data }) {
 
   return (
     <div className="space-y-4">
-      <div className="mb-4">
-        <div className="text-sm font-semibold">{data.race}</div>
-        <div className="text-xs text-muted-foreground">
-          {data.totalSeries} séries • Votre série : n°
-          {data.swimmerSeriesIndex + 1}
-        </div>
-      </div>
-
       <div className="space-y-3">
         {data.series.map((series) => (
           <SeriesTable

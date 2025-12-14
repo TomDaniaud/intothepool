@@ -16,6 +16,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
 export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
+  const title = engagement?.label || "Détails épreuve";
+  const description = engagement
+    ? engagement.meta
+      ? engagement.meta
+      : "Consultation de l’épreuve sélectionnée."
+    : "Sélectionnez une épreuve dans la timeline.";
+
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
       <DialogPrimitive.Portal>
@@ -42,46 +49,49 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
             "data-[state=open]:duration-500 data-[state=closed]:duration-300",
           )}
         >
-          <div className="flex items-start justify-between gap-3 p-4">
-            <div className="min-w-0">
-              <DialogPrimitive.Title className="truncate text-base font-semibold text-foreground">
-                Détails épreuve
-              </DialogPrimitive.Title>
-              <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
-                {engagement
-                  ? "Consultation de l’épreuve sélectionnée."
-                  : "Sélectionnez une épreuve dans la timeline."}
-              </DialogPrimitive.Description>
+          <Tabs
+            defaultValue="engagement"
+            className="flex min-h-0 flex-1 flex-col"
+          >
+            <div className="shrink-0">
+              <div className="flex items-start justify-between gap-3 p-4">
+                <div className="min-w-0">
+                  <DialogPrimitive.Title className="truncate text-base font-semibold text-foreground">
+                    {title}
+                  </DialogPrimitive.Title>
+                  <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
+                    {description}
+                  </DialogPrimitive.Description>
+                </div>
+
+                <DialogPrimitive.Close
+                  className={cn(
+                    "inline-flex h-9 w-9 items-center justify-center rounded-md",
+                    "hover:bg-accent hover:text-accent-foreground",
+                    "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                  )}
+                >
+                  <XIcon className="size-4" />
+                  <span className="sr-only">Close</span>
+                </DialogPrimitive.Close>
+              </div>
+
+              <div className="px-4 pb-3">
+                <TabsList className="w-full justify-start">
+                  <TabsTrigger value="engagement">Engagement</TabsTrigger>
+                  <TabsTrigger value="resultat">Résultat</TabsTrigger>
+                  <TabsTrigger value="analyse">Analyse</TabsTrigger>
+                </TabsList>
+              </div>
             </div>
 
-            <DialogPrimitive.Close
-              className={cn(
-                "inline-flex h-9 w-9 items-center justify-center rounded-md",
-                "hover:bg-accent hover:text-accent-foreground",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-              )}
-            >
-              <XIcon className="size-4" />
-              <span className="sr-only">Close</span>
-            </DialogPrimitive.Close>
-          </div>
-
-          <Separator />
-
-          {/*
-            Contenu en tabs:
-            - "Engagement": liste des séries avec scroll vers le nageur
-            - "Résultat": classement avec records en vert
-            - "Analyse": chart + stats détaillées
-          */}
-          <div className="min-h-0 flex-1 overflow-auto p-4">
-            <Tabs defaultValue="engagement" className="gap-4">
-              <TabsList className="w-full justify-start">
-                <TabsTrigger value="engagement">Engagement</TabsTrigger>
-                <TabsTrigger value="resultat">Résultat</TabsTrigger>
-                <TabsTrigger value="analyse">Analyse</TabsTrigger>
-              </TabsList>
-
+            {/*
+              Contenu en tabs:
+              - "Engagement": liste des séries avec scroll vers le nageur
+              - "Résultat": classement avec records en vert
+              - "Analyse": chart + stats détaillées
+            */}
+            <div className="min-h-0 flex-1 overflow-auto p-4">
               <TabsContent value="engagement" className="min-h-0">
                 <EngagementTab engagement={engagement} />
               </TabsContent>
@@ -93,8 +103,8 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
               <TabsContent value="analyse" className="min-h-0">
                 <AnalysisTab engagement={engagement} />
               </TabsContent>
-            </Tabs>
-          </div>
+            </div>
+          </Tabs>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
     </DialogPrimitive.Root>

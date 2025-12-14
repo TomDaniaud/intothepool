@@ -99,9 +99,13 @@ function ClubPanel({ club }) {
   );
 }
 
-function SwimmerContainer({ license }) {
-  const url = license
-    ? `/api/swimmer?license=${encodeURIComponent(license)}`
+function SwimmerContainer({ firstName, lastName }) {
+  const params = new URLSearchParams();
+  if (firstName) params.set("firstName", firstName);
+  if (lastName) params.set("lastName", lastName);
+
+  const url = params.toString()
+    ? `/api/swimmer?${params.toString()}`
     : "/api/swimmer";
 
   const { data: swimmer, error, isLoading } = useFetchJson(url);
@@ -156,10 +160,14 @@ function ClubContainer({ code }) {
 /**
  * Container principal qui fetch nageur et club.
  */
-export function SwimmerClubPanelContainer({ swimmerLicense, clubCode }) {
+export function SwimmerClubPanelContainer({
+  swimmerFirstName,
+  swimmerLastName,
+  clubCode,
+}) {
   return (
     <section className="space-y-4">
-      <SwimmerContainer license={swimmerLicense} />
+      <SwimmerContainer firstName={swimmerFirstName} lastName={swimmerLastName} />
       <ClubContainer code={clubCode} />
     </section>
   );

@@ -67,7 +67,6 @@ export function EngagementsPanel({ engagements, onSelect }) {
       <Separator />
 
       <div className="px-4 py-4">
-        <div className="-ml-2 sm:-ml-3">
           <Timeline
             position="right"
             sx={{
@@ -172,7 +171,6 @@ export function EngagementsPanel({ engagements, onSelect }) {
             })}
           </Timeline>
         </div>
-      </div>
     </section>
   );
 }
