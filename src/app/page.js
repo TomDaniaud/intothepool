@@ -46,7 +46,7 @@ export default function Home() {
           <div className="flex flex-col gap-4">
             <p className="text-sm font-medium text-muted-foreground">Accueil</p>
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
-              intothepool
+              Intothepool
             </h1>
             <p className="max-w-2xl text-pretty text-base text-muted-foreground sm:text-lg">
               Renseigne le nageur et choisis la compétition.
@@ -80,24 +80,20 @@ export default function Home() {
 
             <div className="space-y-2">
               <Label htmlFor={competitionId}>Compétition</Label>
-              <Select value={competition} onValueChange={setCompetition}>
-                <SelectTrigger
-                  id={competitionId}
-                  aria-label="Choisir la compétition"
-                >
-                  <SelectValue placeholder="Sélectionner une compétition" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="interclubs">Interclubs</SelectItem>
-                  <SelectItem value="regionaux">Régionaux</SelectItem>
-                  <SelectItem value="nationaux">Nationaux</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id={competitionId}
+                name="firstName"
+                autoComplete="given-name"
+                placeholder="Camille"
+                value={competition}
+                onChange={(e) => setCompetition(e.target.value)}
+              />
             </div>
             <div className="space-y-2">
-              <Label className="sr-only">Rechercher</Label>
-              <Button type="submit" className="w-full">
-                Rechercher <ArrowRight className="size-4" />
+              <Label className="text-background">Lancez la recherche</Label>
+              <Button type="submit" className="w-full group">
+                Rechercher{" "}
+                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform duration-200" />
               </Button>
             </div>
           </form>

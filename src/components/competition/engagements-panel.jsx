@@ -2,9 +2,17 @@
 
 /**
  * Panneau gauche: timeline des engagements.
- * - Les items sont affichés comme une ligne avec checkpoints (style GitHub-ish).
+ * - Utilise Material UI `Timeline`.
  * - Seules les épreuves (kind="race") sont cliquables.
  */
+
+import Timeline from "@mui/lab/Timeline";
+import TimelineConnector from "@mui/lab/TimelineConnector";
+import TimelineContent from "@mui/lab/TimelineContent";
+import TimelineDot from "@mui/lab/TimelineDot";
+import TimelineItem from "@mui/lab/TimelineItem";
+import TimelineOppositeContent from "@mui/lab/TimelineOppositeContent";
+import TimelineSeparator from "@mui/lab/TimelineSeparator";
 
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
@@ -13,10 +21,10 @@ function markerClassName(kind) {
   if (kind === "race") {
     return "bg-primary";
   }
-  if (kind === "break") {
-    return "bg-muted-foreground";
+  if (kind === "session") {
+    return "bg-foreground";
   }
-  return "bg-foreground";
+  return "";
 }
 
 export function EngagementsPanel({ engagements, onSelect }) {
@@ -30,61 +38,101 @@ export function EngagementsPanel({ engagements, onSelect }) {
       </div>
       <Separator />
 
-      <div className="relative px-4 py-4">
-        <div className="absolute bottom-4 left-[19px] top-4 w-px bg-border" />
+      <div className="px-4 py-4">
+        <div className="-ml-2 sm:-ml-3">
+          <Timeline
+            position="right"
+            sx={{
+              p: 0,
+              m: 0,
+              "& .MuiTimelineItem-root:before": { flex: 0, padding: 0 },
+              "& .MuiTimelineDot-root": {
+                boxShadow: "none",
+                borderColor: "var(--border)",
+              },
+              "& .MuiTimelineConnector-root": { backgroundColor: "var(--border)" },
+              "& .MuiTimelineContent-root": { paddingTop: 0, paddingBottom: 0 },
+              "& .MuiTimelineOppositeContent-root": {
+                paddingTop: 0,
+                paddingBottom: 0,
+                paddingLeft: 0,
+                paddingRight: 2,
+                color: "var(--muted-foreground)",
+                fontSize: 12,
+                whiteSpace: "nowrap",
+              },
+            }}
+          >
+            {engagements.map((engagement, index) => {
+              const isLast = index === engagements.length - 1;
+              const isRace = engagement.kind === "race";
 
-        <div className="grid gap-1">
-          {engagements.map((engagement) => {
-            const isRace = engagement.kind === "race";
+            // For 'break', use outlined (creux) dot, for others filled
+            const isBreak = engagement.kind === "break";
+            const dotBg =
+              engagement.kind === "race"
+                ? "var(--primary)"
+                : engagement.kind === "session"
+                  ? "var(--foreground)"
+                  : "transparent";
 
-            return (
-              <div key={engagement.id} className="relative flex gap-3 py-2">
-                <div className="relative flex w-8 justify-center">
-                  <div
-                    className={cn(
-                      "mt-1.5 h-3 w-3 rounded-full border border-border",
-                      markerClassName(engagement.kind),
-                    )}
-                  />
-                </div>
+              return (
+                <TimelineItem key={engagement.id}>
+                  <TimelineOppositeContent>{engagement.time || ""}</TimelineOppositeContent>
+                  <TimelineSeparator>
+                    <TimelineDot
+                      variant={isBreak ? "outlined" : "filled"}
+                      sx={{
+                        bgcolor: dotBg,
+                        borderColor: "var(--border)",
+                        width: 12,
+                        height: 12,
+                        my: 0.5,
+                      }}
+                      className={cn(markerClassName(engagement.kind))}
+                    />
+                    {isLast ? null : <TimelineConnector />}
+                  </TimelineSeparator>
 
-                {isRace ? (
-                  <button
-                    type="button"
-                    className={cn(
-                      "min-w-0 flex-1 rounded-md px-2 py-1 text-left",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
-                    )}
-                    onClick={() => onSelect(engagement)}
-                  >
-                    <div className="truncate text-sm font-medium">{engagement.label}</div>
-                    {engagement.meta ? (
-                      <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {engagement.meta}
+                  <TimelineContent>
+                    {isRace ? (
+                      <button
+                        type="button"
+                        className={cn("group",
+                          "cursor-pointer transition-transform duration-200",
+                          "hover:translate-x-2",
+                          "min-w-0 w-full rounded-md px-2 py-1 text-left",
+                          "hover:bg-accent hover:text-accent-foreground",
+                          "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
+                        )}
+                        onClick={() => onSelect(engagement)}
+                      >
+                        <div className="truncate text-sm group-hover:underline underline-offset-2">
+                          {engagement.label}
+                        </div>
+                        {engagement.meta ? (
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {engagement.meta}
+                          </div>
+                        ) : null}
+                      </button>
+                    ) : (
+                      <div className="min-w-0 rounded-md px-2 py-1">
+                        <div className={cn("truncate text-sm font-semibold", engagement.kind === "break" && "font-medium")}>
+                          {engagement.label}
+                        </div>
+                        {engagement.meta ? (
+                          <div className="mt-0.5 truncate text-xs text-muted-foreground">
+                            {engagement.meta}
+                          </div>
+                        ) : null}
                       </div>
-                    ) : null}
-                  </button>
-                ) : (
-                  <div className="min-w-0 flex-1 rounded-md px-2 py-1">
-                    <div
-                      className={cn(
-                        "truncate text-sm font-semibold",
-                        engagement.kind === "break" && "font-medium",
-                      )}
-                    >
-                      {engagement.label}
-                    </div>
-                    {engagement.meta ? (
-                      <div className="mt-0.5 truncate text-xs text-muted-foreground">
-                        {engagement.meta}
-                      </div>
-                    ) : null}
-                  </div>
-                )}
-              </div>
-            );
-          })}
+                    )}
+                  </TimelineContent>
+                </TimelineItem>
+              );
+            })}
+          </Timeline>
         </div>
       </div>
     </section>
