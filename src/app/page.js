@@ -1,5 +1,7 @@
 "use client";
 
+import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
 import { useSearchHistory } from "@/components/search-history-provider";
@@ -13,9 +15,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { ArrowBigRight } from "lucide-react";
-import { ArrowRight } from "lucide-react";
-import {useRouter} from "next/navigation"
 
 export default function Home() {
   const [lastName, setLastName] = useState("");
@@ -32,7 +31,7 @@ export default function Home() {
   function onSubmit(event) {
     event.preventDefault();
     addSearch({ firstName, lastName, competition });
-    router.push("/search");
+    router.push("/competition");
   }
 
   return (
@@ -81,17 +80,25 @@ export default function Home() {
 
             <div className="space-y-2">
               <Label htmlFor={competitionId}>Compétition</Label>
-              <Input
-                id={competitionId}
-                name="firstName"
-                placeholder="Annecy"
-                value={competition}
-                onChange={(e) => setCompetition(e.target.value)}
-              />
+              <Select value={competition} onValueChange={setCompetition}>
+                <SelectTrigger
+                  id={competitionId}
+                  aria-label="Choisir la compétition"
+                >
+                  <SelectValue placeholder="Sélectionner une compétition" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="interclubs">Interclubs</SelectItem>
+                  <SelectItem value="regionaux">Régionaux</SelectItem>
+                  <SelectItem value="nationaux">Nationaux</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <div className="space-y-2 w-100%">
-              <Label className="text-background">Rechercher</Label>
-              <Button className="w-full">Rechercher <ArrowRight/> </Button>
+            <div className="space-y-2">
+              <Label className="sr-only">Rechercher</Label>
+              <Button type="submit" className="w-full">
+                Rechercher <ArrowRight className="size-4" />
+              </Button>
             </div>
           </form>
         </div>
