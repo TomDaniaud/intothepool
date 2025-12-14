@@ -2,6 +2,8 @@
 
 import { useId, useState } from "react";
 
+import { useSearchHistory } from "@/components/search-history-provider";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
@@ -11,15 +13,26 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { ArrowBigRight } from "lucide-react";
+import { ArrowRight } from "lucide-react";
+import { useRouter } from "next/navigation";
 
-export default function Home() {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [competition, setCompetition] = useState("");
+  const router = useRouter();
+
+  const { addSearch } = useSearchHistory();
 
   const lastNameId = useId();
   const firstNameId = useId();
   const competitionId = useId();
+
+  function onSubmit(event) {
+    event.preventDefault();
+    addSearch({ firstName, lastName, competition });
+    router.push("/search");
+  }
 
   return (
     <main className="relative min-h-[100dvh] bg-background text-foreground">
@@ -29,7 +42,7 @@ export default function Home() {
       </div>
 
       <section className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-6 pb-20 pt-20">
-        <div className="w-full rounded-2xl border border-border bg-background/70 p-8 backdrop-blur sm:p-10 ring-">
+        <div className="w-full rounded-2xl border border-border bg-background/70 p-8 backdrop-blur sm:p-10 ">
           <div className="flex flex-col gap-4">
             <p className="text-sm font-medium text-muted-foreground">Accueil</p>
             <h1 className="text-balance text-4xl font-semibold tracking-tight sm:text-5xl">
@@ -40,7 +53,7 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="mt-8 grid gap-6 sm:grid-cols-2">
+          <form onSubmit={onSubmit} className="mt-8 grid gap-6 sm:grid-cols-2">
             <div className="space-y-2">
               <Label htmlFor={lastNameId}>Nom</Label>
               <Input
@@ -65,23 +78,21 @@ export default function Home() {
               />
             </div>
 
-            <div className="space-y-2 sm:col-span-2">
+            <div className="space-y-2">
               <Label htmlFor={competitionId}>Compétition</Label>
-              <Select value={competition} onValueChange={setCompetition}>
-                <SelectTrigger
-                  id={competitionId}
-                  aria-label="Choisir la compétition"
-                >
-                  <SelectValue placeholder="Sélectionner une compétition" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="interclubs">Interclubs</SelectItem>
-                  <SelectItem value="regionaux">Régionaux</SelectItem>
-                  <SelectItem value="nationaux">Nationaux</SelectItem>
-                </SelectContent>
-              </Select>
+              <Input
+                id={competitionId}
+                name="firstName"
+                placeholder="Annecy"
+                value={competition}
+                onChange={(e) => setCompetition(e.target.value)}
+              />
             </div>
-          </div>
+            <div className="space-y-2 w-100%">
+              <Label className="text-background">Rechercher</Label>
+              <Button className="w-full">Rechercher <ArrowRight/> </Button>
+            </div>
+          </form>
         </div>
       </section>
     </main>
