@@ -57,7 +57,7 @@ export default function Home() {
                 Recherche rapide (LiveFFN)
               </p>
               <p className="mt-1 text-pretty text-foreground/70">
-                Fais une recherche en renseignant le nom et le prénom du nageur et
+                Faites une recherche en renseignant le nom et le prénom du nageur et
                 le lieu de la compétition.
               </p>
             </div>
