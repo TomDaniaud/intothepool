@@ -9,7 +9,11 @@
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 
+import { EngagementTab } from "@/components/competition/engagement-tab";
+import { ResultTab } from "@/components/competition/result-tab";
 import { Separator } from "@/components/ui/separator";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { mockPerformanceSeries } from "@/data/performance";
 import { cn } from "@/lib/utils";
 
 export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
@@ -63,23 +67,26 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
 
           <Separator />
 
+          {/*
+            Contenu en tabs:
+            - "Engagement": infos de l'épreuve sélectionnée
+            - "Résultat": placeholder + graphe (mock) en bas
+          */}
           <div className="min-h-0 flex-1 overflow-auto p-4">
-            {!engagement ? (
-              <p className="text-sm text-muted-foreground">Aucune épreuve sélectionnée.</p>
-            ) : (
-              <div>
-                <div className="text-sm font-semibold">{engagement.label}</div>
-                {engagement.meta ? (
-                  <div className="mt-1 text-sm text-muted-foreground">{engagement.meta}</div>
-                ) : null}
+            <Tabs defaultValue="engagement" className="gap-4">
+              <TabsList className="w-full justify-start">
+                <TabsTrigger value="engagement">Engagement</TabsTrigger>
+                <TabsTrigger value="resultat">Résultat</TabsTrigger>
+              </TabsList>
 
-                <Separator className="my-4" />
+              <TabsContent value="engagement" className="min-h-0">
+                <EngagementTab engagement={engagement} />
+              </TabsContent>
 
-                <p className="text-sm text-muted-foreground">
-                  Placeholder: le composant “GitHub-like right modal” complet sera fait plus tard.
-                </p>
-              </div>
-            )}
+              <TabsContent value="resultat" className="min-h-0">
+                <ResultTab series={mockPerformanceSeries} />
+              </TabsContent>
+            </Tabs>
           </div>
         </DialogPrimitive.Content>
       </DialogPrimitive.Portal>
