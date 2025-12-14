@@ -15,8 +15,9 @@ import {
 } from "@/components/ui/select";
 import { ArrowBigRight } from "lucide-react";
 import { ArrowRight } from "lucide-react";
-import { useRouter } from "next/navigation";
+import {useRouter} from "next/navigation"
 
+export default function Home() {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [competition, setCompetition] = useState("");
