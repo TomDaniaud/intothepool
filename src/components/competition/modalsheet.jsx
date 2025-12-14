@@ -1,14 +1,14 @@
 "use client";
 
 /**
- * Right modal (style GitHub) : à terme, remplacer ce placeholder par
- * un composant complet (scrap + détails + actions).
- * On utilise Radix `Dialog` directement ("modal") pour coller au comportement GitHub.
+ * Right modal (style GitHub) : panneau de détails d'une épreuve.
+ * 3 onglets : Engagement (séries), Résultat (classement), Analyse (stats + chart).
  */
 
 import * as DialogPrimitive from "@radix-ui/react-dialog";
 import { XIcon } from "lucide-react";
 
+import { AnalysisTab } from "@/components/competition/analysis-tab";
 import { EngagementTab } from "@/components/competition/engagement-tab";
 import { ResultTab } from "@/components/competition/result-tab";
 import { Separator } from "@/components/ui/separator";
@@ -70,14 +70,16 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
 
           {/*
             Contenu en tabs:
-            - "Engagement": infos de l'épreuve sélectionnée
-            - "Résultat": placeholder + graphe (mock) en bas
+            - "Engagement": liste des séries avec scroll vers le nageur
+            - "Résultat": classement avec records en vert
+            - "Analyse": chart + stats détaillées
           */}
           <div className="min-h-0 flex-1 overflow-auto p-4">
             <Tabs defaultValue="engagement" className="gap-4">
               <TabsList className="w-full justify-start">
                 <TabsTrigger value="engagement">Engagement</TabsTrigger>
                 <TabsTrigger value="resultat">Résultat</TabsTrigger>
+                <TabsTrigger value="analyse">Analyse</TabsTrigger>
               </TabsList>
 
               <TabsContent value="engagement" className="min-h-0">
@@ -86,6 +88,10 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
 
               <TabsContent value="resultat" className="min-h-0">
                 <ResultTab engagement={engagement} />
+              </TabsContent>
+
+              <TabsContent value="analyse" className="min-h-0">
+                <AnalysisTab engagement={engagement} />
               </TabsContent>
             </Tabs>
           </div>

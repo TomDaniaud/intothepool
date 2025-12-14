@@ -15,11 +15,18 @@
 
 /**
  * @typedef {Object} Series
- * @property {string} race
- * @property {number} nb
- * @property {number} maxNb
- * @property {"simple"|"relay"} type
+ * @property {number} seriesNumber
+ * @property {boolean} isSwimmerSeries - True si le nageur sélectionné est dans cette série
  * @property {SeriesSwimmer[]} swimmers
+ */
+
+/**
+ * @typedef {Object} AllSeriesResponse
+ * @property {string} race
+ * @property {number} totalSeries
+ * @property {number} swimmerSeriesIndex - Index de la série où se trouve le nageur (0-based)
+ * @property {"simple"|"relay"} type
+ * @property {Series[]} series
  */
 
 function parseRaceMeta(meta) {
@@ -34,11 +41,6 @@ function parseRaceMeta(meta) {
   };
 }
 
-function clampNumber(value, min, max) {
-  if (Number.isNaN(value)) return min;
-  return Math.min(max, Math.max(min, value));
-}
-
 function pad2(value) {
   return String(value).padStart(2, "0");
 }
@@ -50,13 +52,13 @@ function formatTime(seconds) {
 }
 
 /**
- * Récupère les informations de série pour une épreuve.
+ * Récupère toutes les séries pour une épreuve.
  * @param {Object} params
  * @param {string} [params.competId]
  * @param {string} [params.race]
  * @param {string} [params.engagementId]
  * @param {string} [params.meta]
- * @returns {Promise<Series>}
+ * @returns {Promise<AllSeriesResponse>}
  */
 export async function getSeries({
   competId: _competId,
@@ -69,32 +71,56 @@ export async function getSeries({
   // Deterministic pseudo-randomness based on engagementId
   const seed = Array.from(engagementId || "unknown").reduce(
     (acc, char) => acc + char.charCodeAt(0),
-    0,
+    0
   );
 
-  const maxNb = 8;
-  const nb = clampNumber(seriesNumber ?? (seed % 4) + 1, 1, 12);
+  // Nombre total de séries (entre 3 et 6)
+  const totalSeries = 3 + (seed % 4);
+  const swimmerSeriesNumber = seriesNumber || (seed % totalSeries) + 1;
+  const swimmerSeriesIndex = swimmerSeriesNumber - 1;
 
-  const swimmers = Array.from({ length: maxNb }, (_, index) => {
-    const laneNumber = index + 1;
-    const base = 28 + ((seed + laneNumber * 7) % 40) / 10;
-    const jitter = ((seed + laneNumber * 13) % 15) / 100;
-    const timeSeconds = base + jitter;
+  const series = Array.from({ length: totalSeries }, (_, seriesIdx) => {
+    const currentSeriesNumber = seriesIdx + 1;
+    const isSwimmerSeries = currentSeriesNumber === swimmerSeriesNumber;
+    const maxLanes = 8;
+
+    const swimmers = Array.from({ length: maxLanes }, (_, laneIdx) => {
+      const laneNumber = laneIdx + 1;
+      // Variation basée sur la série et le couloir
+      const base = 28 + ((seed + seriesIdx * 11 + laneNumber * 7) % 40) / 10;
+      const jitter = ((seed + seriesIdx * 5 + laneNumber * 13) % 15) / 100;
+      const timeSeconds = base + jitter;
+
+      // Le nageur sélectionné est dans sa série et son couloir
+      const isSelected =
+        isSwimmerSeries &&
+        (lane != null ? laneNumber === lane : laneNumber === 5);
+
+      return {
+        lane: laneNumber,
+        name: isSelected
+          ? "Vous"
+          : `Nageur ${pad2(seriesIdx * 8 + laneNumber)}`,
+        club: `Club ${String.fromCharCode(
+          65 + ((seed + seriesIdx + laneNumber) % 6)
+        )}`,
+        entryTime: formatTime(timeSeconds),
+        isSelected,
+      };
+    });
 
     return {
-      lane: laneNumber,
-      name: `Nageur ${pad2(laneNumber)}`,
-      club: `Club ${String.fromCharCode(65 + ((seed + laneNumber) % 6))}`,
-      entryTime: formatTime(timeSeconds),
-      isSelected: lane != null ? laneNumber === lane : false,
+      seriesNumber: currentSeriesNumber,
+      isSwimmerSeries,
+      swimmers,
     };
   });
 
   return {
     race: race || "Épreuve",
-    nb,
-    maxNb,
+    totalSeries,
+    swimmerSeriesIndex,
     type: "simple",
-    swimmers,
+    series,
   };
 }
