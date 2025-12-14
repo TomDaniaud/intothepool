@@ -13,7 +13,6 @@ import { EngagementTab } from "@/components/competition/engagement-tab";
 import { ResultTab } from "@/components/competition/result-tab";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { mockPerformanceSeries } from "@/data/performance";
 import { cn } from "@/lib/utils";
 
 export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
@@ -49,7 +48,9 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
                 Détails épreuve
               </DialogPrimitive.Title>
               <DialogPrimitive.Description className="mt-1 text-sm text-muted-foreground">
-                {engagement ? "Consultation de l’épreuve sélectionnée." : "Sélectionnez une épreuve dans la timeline."}
+                {engagement
+                  ? "Consultation de l’épreuve sélectionnée."
+                  : "Sélectionnez une épreuve dans la timeline."}
               </DialogPrimitive.Description>
             </div>
 
@@ -84,7 +85,7 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
               </TabsContent>
 
               <TabsContent value="resultat" className="min-h-0">
-                <ResultTab series={mockPerformanceSeries} />
+                <ResultTab engagement={engagement} />
               </TabsContent>
             </Tabs>
           </div>

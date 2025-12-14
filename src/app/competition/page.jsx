@@ -7,34 +7,12 @@
  * - Au clic sur une épreuve: ouverture d'une right modal (placeholder, style GitHub)
  */
 
-import { useMemo, useState } from "react";
-
+import { useState } from "react";
+import { EngagementsPanelContainer } from "@/components/competition/engagements-panel";
 import { EngagementDetailsSheet } from "@/components/competition/modalsheet";
-import { EngagementsPanel } from "@/components/competition/engagements-panel";
-import { SwimmerClubPanel } from "@/components/competition/swimmer-club-panel";
-import { mockEngagements } from "@/data/engagements";
+import { SwimmerClubPanelContainer } from "@/components/competition/swimmer-club-panel";
 
 export default function CompetitionPage() {
-  // Mock data nageur/club : plus tard, on lira depuis l'historique / une API.
-  const swimmer = useMemo(
-    () => ({
-      firstName: "Camille",
-      lastName: "Dupont",
-      license: "A123456",
-      category: "Senior",
-    }),
-    [],
-  );
-
-  const club = useMemo(
-    () => ({
-      name: "Cercle des Nageurs",
-      city: "Annecy",
-      code: "074001",
-    }),
-    [],
-  );
-
   const [selectedEngagement, setSelectedEngagement] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -56,10 +34,10 @@ export default function CompetitionPage() {
 
       <div className="grid gap-6 lg:grid-cols-[1fr_420px]">
         {/* Gauche: engagements (timeline) */}
-        <EngagementsPanel engagements={mockEngagements} onSelect={onSelectEngagement} />
+        <EngagementsPanelContainer onSelect={onSelectEngagement} />
 
         {/* Droite: nageur + club */}
-        <SwimmerClubPanel swimmer={swimmer} club={club} />
+        <SwimmerClubPanelContainer />
       </div>
 
       {/* Right modal placeholder (style GitHub) */}

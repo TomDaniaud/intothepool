@@ -11,8 +11,8 @@ import {
   Chart as ChartJS,
   Filler,
   Legend,
-  LineElement,
   LinearScale,
+  LineElement,
   PointElement,
   Tooltip,
 } from "chart.js";

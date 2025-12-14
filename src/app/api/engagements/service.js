@@ -1,6 +1,7 @@
 /**
- * Mock data temporaire.
- * Remplacer plus tard par le résultat du scraping (même shape).
+ * Service pour les engagements.
+ * Pour l'instant retourne des mock data.
+ * Plus tard: scraping depuis la FFN ou autre source.
  */
 
 /**
@@ -13,7 +14,7 @@
  */
 
 /** @type {Engagement[]} */
-export const mockEngagements = [
+const mockEngagements = [
   {
     id: "t-001",
     kind: "session",
@@ -50,3 +51,22 @@ export const mockEngagements = [
     meta: "Série 1 • Couloir 4",
   },
 ];
+
+/**
+ * Récupère les engagements pour une compétition.
+ * @param {string} [_competId] - ID de la compétition (ignoré pour l'instant)
+ * @returns {Promise<Engagement[]>}
+ */
+export async function getEngagements(_competId) {
+  // TODO: scraping basé sur _competId
+  return mockEngagements;
+}
+
+/**
+ * Récupère un engagement par ID.
+ * @param {string} id
+ * @returns {Promise<Engagement | null>}
+ */
+export async function getEngagementById(id) {
+  return mockEngagements.find((e) => e.id === id) || null;
+}

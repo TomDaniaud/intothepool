@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { PanelLeft, Plus, Trash2 } from "lucide-react";
+import Link from "next/link";
 
 import { useSearchHistory } from "@/components/search-history-provider";
 import { Button } from "@/components/ui/button";
@@ -42,7 +42,7 @@ function formatRelativeTime(createdAt) {
     }
   }
 
-  const unitMs = steps.find(([u]) => u === unit)?.[1] ?? (60 * 1000);
+  const unitMs = steps.find(([u]) => u === unit)?.[1] ?? 60 * 1000;
   const value = Math.round(diffMs / unitMs);
 
   const rtf = new Intl.RelativeTimeFormat("fr", { numeric: "auto" });
@@ -60,7 +60,9 @@ function SidebarBody() {
     <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground w-full">
       <div className="flex items-center justify-between gap-3 px-4 py-4">
         <div className="min-w-0">
-          <p className="text-sm font-medium text-muted-foreground">Intothepool</p>
+          <p className="text-sm font-medium text-muted-foreground">
+            Intothepool
+          </p>
           <h2 className="truncate text-lg font-semibold">Recherches</h2>
         </div>
       </div>
@@ -139,11 +141,15 @@ function SidebarBody() {
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Prénom</span>
-              <span className="font-medium">{activeItem?.firstName || "—"}</span>
+              <span className="font-medium">
+                {activeItem?.firstName || "—"}
+              </span>
             </div>
             <div className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">Compétition</span>
-              <span className="font-medium">{activeItem?.competition || "—"}</span>
+              <span className="font-medium">
+                {activeItem?.competition || "—"}
+              </span>
             </div>
           </div>
         </div>
