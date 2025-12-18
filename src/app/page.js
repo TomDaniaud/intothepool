@@ -31,6 +31,9 @@ export default function Home() {
     setFirstName(capFirstName);
     setLastName(capLastName);
     setCompetition(capCompetition);
+    if (!capFirstName && !capLastName && !capCompetition) {
+      return;
+    }
     addSearch({
       firstName: capFirstName,
       lastName: capLastName,
