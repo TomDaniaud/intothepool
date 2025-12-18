@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { getSeries } from "./service";
-import { ScrapingError, ValidationError } from "@/lib/scraping";
+import { ScrapingError, ValidationError } from "@/lib/scrapers";
 
 // Schema de validation des query params
 const QueryParamsSchema = z.object({
@@ -16,12 +16,13 @@ const QueryParamsSchema = z.object({
 export async function GET(request) {
   try {
     const url = new URL(request.url);
-    const competId = url.searchParams.get("compet") || url.searchParams.get("competId");
-    const race = url.searchParams.get("race");
-    const engagementId = url.searchParams.get("engagementId");
-    const meta = url.searchParams.get("meta");
-    const date = url.searchParams.get("date");
-    const time = url.searchParams.get("time");
+    // Convertir null en undefined pour Zod
+    const competId = url.searchParams.get("compet") || url.searchParams.get("competId") || undefined;
+    const race = url.searchParams.get("race") || undefined;
+    const engagementId = url.searchParams.get("engagementId") || undefined;
+    const meta = url.searchParams.get("meta") || undefined;
+    const date = url.searchParams.get("date") || undefined;
+    const time = url.searchParams.get("time") || undefined;
 
     // Validation des paramètres
     const validation = QueryParamsSchema.safeParse({

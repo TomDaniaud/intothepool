@@ -6,23 +6,24 @@ import {
   getSwimmerByName,
   getDefaultSwimmer,
 } from "./service";
-import { ScrapingError, ValidationError } from "@/lib/scraping";
+import { ScrapingError, ValidationError } from "@/lib/scrapers";
 
 // Schema de validation des query params
 const QueryParamsSchema = z.object({
-  competId: z.string().min(1, "L'ID de la compétition est requis"),
-  license: z.string().optional(),
-  firstName: z.string().optional(),
-  lastName: z.string().optional(),
+  competId: z.string().min(1, "L'ID de la compétition est requis").optional(),
+  license: z.string().min(1).optional(),
+  firstName: z.string().min(1).optional(),
+  lastName: z.string().min(1).optional(),
 });
 
 export async function GET(request) {
   try {
     const url = new URL(request.url);
-    const competId = url.searchParams.get("competId");
-    const license = url.searchParams.get("license");
-    const firstName = url.searchParams.get("firstName");
-    const lastName = url.searchParams.get("lastName");
+    // Convertir null en undefined pour Zod
+    const competId = url.searchParams.get("competId") || undefined;
+    const license = url.searchParams.get("license") || undefined;
+    const firstName = url.searchParams.get("firstName") || undefined;
+    const lastName = url.searchParams.get("lastName") || undefined;
 
     // Validation des paramètres
     const validation = QueryParamsSchema.safeParse({
@@ -37,6 +38,14 @@ export async function GET(request) {
           error: "Paramètres invalides",
           details: validation.error.flatten().fieldErrors,
         },
+        { status: 400 }
+      );
+    }
+
+    // competId est requis pour toutes les opérations de scraping
+    if (!competId) {
+      return NextResponse.json(
+        { error: "L'ID de la compétition (competId) est requis" },
         { status: 400 }
       );
     }

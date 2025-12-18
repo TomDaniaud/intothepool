@@ -4,19 +4,20 @@ import { getClubs, getClubByCode, getDefaultClub } from "./service";
 import {
   ScrapingError,
   ValidationError,
-} from "@/lib/scraping";
+} from "@/lib/scrapers";
 
 // Schema de validation des query params
 const QueryParamsSchema = z.object({
-  competId: z.string().min(1, "L'ID de la compétition est requis"),
-  code: z.string().optional(),
+  competId: z.string().min(1, "L'ID de la compétition est requis").optional(),
+  code: z.string().min(1).optional(),
 });
 
 export async function GET(request) {
   try {
     const url = new URL(request.url);
-    const competId = url.searchParams.get("competId");
-    const code = url.searchParams.get("code");
+    // Convertir null en undefined pour Zod
+    const competId = url.searchParams.get("competId") || undefined;
+    const code = url.searchParams.get("code") || undefined;
 
     // Validation des paramètres
     const validation = QueryParamsSchema.safeParse({ competId, code });
@@ -26,6 +27,14 @@ export async function GET(request) {
           error: "Paramètres invalides",
           details: validation.error.flatten().fieldErrors,
         },
+        { status: 400 }
+      );
+    }
+
+    // competId est requis pour toutes les opérations de scraping
+    if (!competId) {
+      return NextResponse.json(
+        { error: "L'ID de la compétition (competId) est requis" },
         { status: 400 }
       );
     }
