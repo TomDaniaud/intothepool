@@ -20,6 +20,7 @@ export {
 export { ClubScraper, clubScraper, ClubSchema } from "./club";
 export { SwimmerScraper, swimmerScraper, SwimmerSchema } from "./swimmer";
 export { SeriesScraper, seriesScraper, SeriesSchema, SeriesParamsSchema } from "./series";
+export { CompetitionScraper, competitionScraper, CompetitionSchema, LevelSchema } from "./competition";
 
 // ============================================================================
 // FACTORY POUR CRÉER DES SCRAPERS CONFIGURÉS
@@ -28,6 +29,7 @@ export { SeriesScraper, seriesScraper, SeriesSchema, SeriesParamsSchema } from "
 import { ClubScraper } from "./club";
 import { SwimmerScraper } from "./swimmer";
 import { SeriesScraper } from "./series";
+import { CompetitionScraper } from "./competition";
 
 /**
  * @typedef {Object} ScraperOptions
@@ -38,17 +40,18 @@ import { SeriesScraper } from "./series";
 /**
  * Crée un ensemble de scrapers connectés entre eux
  * @param {ScraperOptions} [options]
- * @returns {{club: ClubScraper, swimmer: SwimmerScraper, series: SeriesScraper}}
+ * @returns {{club: ClubScraper, swimmer: SwimmerScraper, series: SeriesScraper, competition: CompetitionScraper}}
  */
 export function createScrapers(options = {}) {
   const club = new ClubScraper(options);
   const swimmer = new SwimmerScraper(options);
   const series = new SeriesScraper(options);
+  const competition = new CompetitionScraper(options);
 
   // Connecter les dépendances
   swimmer.registerDependency("club", club);
 
-  return { club, swimmer, series };
+  return { club, swimmer, series, competition };
 }
 
 // ============================================================================
