@@ -2,6 +2,7 @@
 
 /**
  * Onglet "Analyse" : graphique de progression + statistiques détaillées.
+ * Utilise le store de compétition pour accéder aux IDs.
  */
 
 import { PerformanceChart } from "@/components/competition/performance-chart";
@@ -9,6 +10,7 @@ import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
+import { useCompetitionStore, useApiUrl } from "@/components/competition-store-provider";
 
 function AnalysisSkeleton() {
   return (
@@ -218,14 +220,16 @@ function AnalysisContent({ data }) {
 }
 
 function AnalysisContainer({ engagement }) {
+  const store = useCompetitionStore();
   const eventId = engagement?.label?.replace(/\s+/g, "") || null;
 
-  const params = new URLSearchParams();
-  if (eventId) params.set("eventId", eventId);
+  const url = useApiUrl("/api/analysis", {
+    eventId,
+    license: store.license,
+  });
 
-  const url = `/api/analysis${params.toString() ? `?${params.toString()}` : ""}`;
-
-  const { data, error, isLoading } = useFetchJson(url);
+  const shouldFetch = Boolean(eventId);
+  const { data, error, isLoading } = useFetchJson(shouldFetch ? url : null);
 
   if (isLoading) return <AnalysisSkeleton />;
 

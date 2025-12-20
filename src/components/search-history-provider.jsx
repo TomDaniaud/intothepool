@@ -18,7 +18,10 @@ const MAX_ITEMS = 20;
  * @property {string} label
  * @property {string} firstName
  * @property {string} lastName
- * @property {string} competition
+ * @property {string} competition - Nom de la compétition (affiché)
+ * @property {string} competId - ID FFN de la compétition (pour les API)
+ * @property {string} [clubCode] - Code du club (optionnel)
+ * @property {string} [license] - Numéro de licence (optionnel)
  * @property {number} createdAt
  */
 
@@ -66,6 +69,9 @@ export function SearchHistoryProvider({ children }) {
         firstName: String(x.firstName ?? ""),
         lastName: String(x.lastName ?? ""),
         competition: String(x.competition ?? ""),
+        competId: String(x.competId ?? ""),
+        clubCode: String(x.clubCode ?? ""),
+        license: String(x.license ?? ""),
         createdAt: Number(x.createdAt ?? Date.now()),
       }));
 
@@ -82,15 +88,18 @@ export function SearchHistoryProvider({ children }) {
     }
   }, [items]);
 
-  const addSearch = useCallback(({ firstName, lastName, competition }) => {
+  const addSearch = useCallback(({ firstName, lastName, competition, competId, clubCode, license }) => {
     const next = {
       firstName: String(firstName ?? "").trim(),
       lastName: String(lastName ?? "").trim(),
       competition: String(competition ?? "").trim(),
+      competId: String(competId ?? "").trim(),
+      clubCode: String(clubCode ?? "").trim(),
+      license: String(license ?? "").trim(),
     };
 
     // Si tout est vide, on ne crée pas d'onglet.
-    if (!next.firstName && !next.lastName && !next.competition) return;
+    if (!next.firstName && !next.lastName && !next.competition && !next.competId) return;
 
     const item = {
       id: makeId(),

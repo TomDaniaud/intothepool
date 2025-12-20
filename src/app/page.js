@@ -1,6 +1,6 @@
 "use client";
 
-import { ArrowRight, Info } from "lucide-react";
+import { ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useId, useState } from "react";
 
@@ -14,6 +14,8 @@ export default function Home() {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
   const [competition, setCompetition] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const router = useRouter();
 
   const { addSearch } = useSearchHistory();
@@ -22,8 +24,10 @@ export default function Home() {
   const firstNameId = useId();
   const competitionId = useId();
 
-  function onSubmit(event) {
+  async function onSubmit(event) {
     event.preventDefault();
+    setError(null);
+    
     const capFirstName = capitalize(firstName.trim());
     const capLastName = capitalize(lastName.trim());
     const capCompetition = capitalize(competition.trim());
@@ -31,15 +35,44 @@ export default function Home() {
     setFirstName(capFirstName);
     setLastName(capLastName);
     setCompetition(capCompetition);
+    
     if (!capFirstName && !capLastName && !capCompetition) {
       return;
     }
-    addSearch({
-      firstName: capFirstName,
-      lastName: capLastName,
-      competition: capCompetition,
-    });
-    router.push("/competition");
+
+    setIsLoading(true);
+
+    try {
+      // Résoudre le competId via l'API de compétitions
+      let resolvedCompetId = null;
+      let resolvedCompetName = capCompetition;
+
+      if (capCompetition) {
+        const response = await fetch(`/api/competition?location=${encodeURIComponent(capCompetition.toLowerCase())}`);
+        if (response.ok) {
+          const competitions = await response.json();
+          if (competitions && competitions.length > 0) {
+            // Prendre la première compétition trouvée
+            resolvedCompetId = competitions[0].ffnId;
+            resolvedCompetName = capitalize(competitions[0].location) || capCompetition;
+          }
+        }
+      }
+
+      addSearch({
+        firstName: capFirstName,
+        lastName: capLastName,
+        competition: resolvedCompetName,
+        competId: resolvedCompetId,
+      });
+      
+      router.push("/competition");
+    } catch (err) {
+      console.error("Erreur lors de la recherche:", err);
+      setError("Erreur lors de la recherche. Veuillez réessayer.");
+    } finally {
+      setIsLoading(false);
+    }
   }
 
   return (
@@ -118,10 +151,22 @@ export default function Home() {
             </div>
             <div className="space-y-2">
               <Label className="text-background">Lancez la recherche</Label>
-              <Button type="submit" className="w-full group">
-                Rechercher{" "}
-                <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform duration-200" />
+              <Button type="submit" className="w-full group" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="size-4 animate-spin" />
+                    Recherche...
+                  </>
+                ) : (
+                  <>
+                    Rechercher{" "}
+                    <ArrowRight className="size-4 group-hover:translate-x-1 transition-transform duration-200" />
+                  </>
+                )}
               </Button>
+              {error && (
+                <p className="text-sm text-red-500">{error}</p>
+              )}
             </div>
           </form>
         </div>

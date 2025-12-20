@@ -1,20 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getCompetitionById,
-  getCompetitions,
-  searchCompetitionsByName,
-} from "./service";
+import { scrapers } from "@/lib/scrapers";
 import { ScrapingError, ValidationError, NotFoundError } from "@/lib/scrapers";
 
 // Query params:
-// - id|ffnId: string  -> retourne 1 compétition
-// - name: string      -> retourne liste filtrée
+// - ffnId: string  -> retourne 1 compétition
+// - location: string      -> retourne liste filtrée
 // - sinon             -> retourne toutes les compétitions
 const QueryParamsSchema = z.object({
-  id: z.string().min(1).optional(),
   ffnId: z.string().min(1).optional(),
-  name: z.string().min(1).optional(),
+  location: z.string().min(1).optional(),
 });
 
 export async function GET(request) {
@@ -22,11 +17,10 @@ export async function GET(request) {
     const url = new URL(request.url);
 
     // Convertir null en undefined pour Zod
-    const id = url.searchParams.get("id") || undefined;
     const ffnId = url.searchParams.get("ffnId") || undefined;
-    const name = url.searchParams.get("name") || undefined;
+    const location = url.searchParams.get("location") || undefined;
 
-    const validation = QueryParamsSchema.safeParse({ id, ffnId, name });
+    const validation = QueryParamsSchema.safeParse({ ffnId, location });
     if (!validation.success) {
       return NextResponse.json(
         {
@@ -37,19 +31,18 @@ export async function GET(request) {
       );
     }
 
-    const resolvedId = id || ffnId;
 
-    if (resolvedId) {
-      const competition = await getCompetitionById(resolvedId);
+    if (ffnId) {
+      const competition = await scrapers.competition.getById(ffnId);
       return NextResponse.json(competition);
     }
 
-    if (name) {
-      const competitions = await searchCompetitionsByName(name);
+    if (location) {
+      const competitions = await scrapers.competition.searchByLocation(location);
       return NextResponse.json(competitions);
     }
 
-    const competitions = await getCompetitions();
+    const competitions = await scrapers.competition.getAll();
     return NextResponse.json(competitions);
   } catch (error) {
     if (error instanceof ValidationError) {

@@ -4,6 +4,7 @@
  * Panneau gauche: timeline des engagements.
  * - Utilise Material UI `Timeline`.
  * - Seules les épreuves (kind="race") sont cliquables.
+ * - Utilise le store de compétition pour accéder au competId.
  */
 
 import Timeline from "@mui/lab/Timeline";
@@ -17,6 +18,7 @@ import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
+import { useCompetitionStore, useApiUrl } from "@/components/competition-store-provider";
 
 function EngagementsPanelSkeleton() {
   return (
@@ -177,13 +179,23 @@ export function EngagementsPanel({ engagements, onSelect }) {
 
 /**
  * Container qui fetch les engagements et gère les états loading/error/empty.
+ * Utilise le store de compétition pour récupérer le competId.
  */
-export function EngagementsPanelContainer({ competId, onSelect }) {
-  const url = competId
-    ? `/api/engagements?competId=${encodeURIComponent(competId)}`
-    : "/api/engagements";
+export function EngagementsPanelContainer({ onSelect }) {
+  const store = useCompetitionStore();
+  const url = useApiUrl("/api/engagements");
 
-  const { data: engagements, error, isLoading } = useFetchJson(url);
+  // Ne pas fetch si competId manquant
+  const shouldFetch = Boolean(store.competId);
+  const { data: engagements, error, isLoading } = useFetchJson(shouldFetch ? url : null);
+
+  if (!store.competId) {
+    return (
+      <section className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <EmptyState message="ID de compétition manquant." />
+      </section>
+    );
+  }
 
   if (isLoading) {
     return <EngagementsPanelSkeleton />;

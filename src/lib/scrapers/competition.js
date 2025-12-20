@@ -31,7 +31,7 @@ export const CompetitionSchema = z.object({
 });
 
 export const SearchCompetitionsParamsSchema = z.object({
-  name: z.string().min(1, "Le nom de la compétition est requis"),
+  location: z.string().min(1, "Le lieu de la compétition est requis"),
 });
 
 // ============================================================================
@@ -207,42 +207,6 @@ export class CompetitionScraper extends BaseScraper {
         });
       }
 
-      // Fallback ultra-robuste si les classes spécifiques ne sont pas présentes
-      if (competitions.length === 0) {
-        const seen = new Set();
-
-        $("a[href*='competition=']").each((_, a) => {
-          const href = $(a).attr("href") || "";
-          const ffnId = extractCompetitionIdFromHref(href);
-          const name = $(a).text().trim();
-          if (!ffnId || !name || seen.has(ffnId)) return;
-
-          seen.add(ffnId);
-          const surroundingText = $(a).parent().text();
-          const poolsize = extractPoolSize(surroundingText) || 25;
-          const dates = extractDates(surroundingText);
-          const stats = extractStats(surroundingText);
-
-          const candidate = {
-            level: "NATIONAL",
-            ffnId,
-            name,
-            poolsize,
-            startDate: dates[0] || new Date(0),
-            endDate: dates[1] || null,
-            location: null,
-            image: null,
-            nbEntries: stats?.entries || 0,
-            nbSwimmers: stats?.swimmers || 0,
-          };
-
-          const validated = this.safeValidate(CompetitionSchema, candidate);
-          if (validated) {
-            competitions.push(validated);
-          }
-        });
-      }
-
       return competitions;
     });
   }
@@ -265,16 +229,16 @@ export class CompetitionScraper extends BaseScraper {
 
   /**
    * Recherche des compétitions par nom
-   * @param {string} name
+   * @param {string} location
    * @returns {Promise<Competition[]>}
    */
-  async searchByName(name) {
-    this.validate(SearchCompetitionsParamsSchema, { name });
+  async searchByLocation(location) {
+    this.validate(SearchCompetitionsParamsSchema, { location });
     const competitions = await this.getAll();
-    const normalizedName = name.toLowerCase().trim();
+    const normalizedLocation = location.toLowerCase().trim();
 
     return competitions.filter((c) =>
-      c.name.toLowerCase().includes(normalizedName)
+      c.location.toLowerCase().includes(normalizedLocation)
     );
   }
 

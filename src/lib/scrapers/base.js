@@ -172,6 +172,7 @@ export class BaseScraper {
     if (this.useCache) {
       const cached = cache.get(cacheKey);
       if (cached !== null) {
+        console.log(` CACHE key found for <${cacheKey}> -- using cached ressources ressource`);
         return cached;
       }
     }
@@ -211,6 +212,9 @@ export class BaseScraper {
         );
       }
 
+      // Affiche le status code en vert dans le terminal
+      console.log(` GET ${url} \x1b[32m${response.status}\x1b[0m -- external fetch`);
+
       return await response.text();
     } catch (error) {
       if (error instanceof ScrapingError) {
@@ -230,6 +234,7 @@ export class BaseScraper {
    * @returns {Promise<cheerio.CheerioAPI>}
    */
   async fetchCheerio(url) {
+
     const html = await this.fetchHtml(url);
     return cheerio.load(html);
   }

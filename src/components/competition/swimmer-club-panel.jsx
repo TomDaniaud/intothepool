@@ -3,11 +3,13 @@
 /**
  * Panneau droite: infos nageur + infos club.
  * Avec fetch depuis les API.
+ * Utilise le store de compétition pour accéder aux IDs nécessaires.
  */
 
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
+import { useCompetitionStore, useApiUrl } from "@/components/competition-store-provider";
 
 function SwimmerPanelSkeleton() {
   return (
@@ -99,16 +101,28 @@ function ClubPanel({ club }) {
   );
 }
 
-function SwimmerContainer({ firstName, lastName }) {
-  const params = new URLSearchParams();
-  if (firstName) params.set("firstName", firstName);
-  if (lastName) params.set("lastName", lastName);
+function SwimmerContainer({ firstName, lastName, license }) {
+  const store = useCompetitionStore();
+  
+  // Prioriser la licence (nageurId) si disponible, sinon fallback sur nom/prénom
+  const effectiveLicense = license || store.license;
+  const url = useApiUrl("/api/swimmer", effectiveLicense 
+    ? { license: effectiveLicense } 
+    : { firstName, lastName }
+  );
 
-  const url = params.toString()
-    ? `/api/swimmer?${params.toString()}`
-    : "/api/swimmer";
+  // Ne pas fetch si competId manquant ou si aucun identifiant nageur
+  const hasSwimmerIdentifier = effectiveLicense || (firstName || lastName);
+  const shouldFetch = Boolean(store.competId && hasSwimmerIdentifier);
+  const { data: swimmer, error, isLoading } = useFetchJson(shouldFetch ? url : null);
 
-  const { data: swimmer, error, isLoading } = useFetchJson(url);
+  if (!store.competId) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <EmptyState message="ID de compétition manquant." />
+      </div>
+    );
+  }
 
   if (isLoading) return <SwimmerPanelSkeleton />;
 
@@ -120,7 +134,10 @@ function SwimmerContainer({ firstName, lastName }) {
     );
   }
 
-  if (!swimmer) {
+  // Si l'API renvoie un tableau, prendre le premier
+  const swimmerData = Array.isArray(swimmer) ? swimmer[0] : swimmer;
+
+  if (!swimmerData) {
     return (
       <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
         <EmptyState message="Aucun nageur trouvé." />
@@ -128,13 +145,24 @@ function SwimmerContainer({ firstName, lastName }) {
     );
   }
 
-  return <SwimmerPanel swimmer={swimmer} />;
+  return <SwimmerPanel swimmer={swimmerData} />;
 }
 
 function ClubContainer({ code }) {
-  const url = code ? `/api/club?code=${encodeURIComponent(code)}` : "/api/club";
+  const store = useCompetitionStore();
+  const url = useApiUrl("/api/club", { code });
 
-  const { data: club, error, isLoading } = useFetchJson(url);
+  // Ne pas fetch si competId manquant
+  const shouldFetch = Boolean(store.competId);
+  const { data: club, error, isLoading } = useFetchJson(shouldFetch ? url : null);
+
+  if (!store.competId) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <EmptyState message="ID de compétition manquant." />
+      </div>
+    );
+  }
 
   if (isLoading) return <ClubPanelSkeleton />;
 
@@ -159,15 +187,21 @@ function ClubContainer({ code }) {
 
 /**
  * Container principal qui fetch nageur et club.
+ * Priorise la licence (nageurId) si disponible.
  */
 export function SwimmerClubPanelContainer({
   swimmerFirstName,
   swimmerLastName,
+  swimmerLicense,
   clubCode,
 }) {
   return (
     <section className="space-y-4">
-      <SwimmerContainer firstName={swimmerFirstName} lastName={swimmerLastName} />
+      <SwimmerContainer 
+        firstName={swimmerFirstName} 
+        lastName={swimmerLastName} 
+        license={swimmerLicense}
+      />
       <ClubContainer code={clubCode} />
     </section>
   );

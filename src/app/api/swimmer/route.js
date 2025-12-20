@@ -1,12 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import {
-  getSwimmers,
-  getSwimmerByLicense,
-  getSwimmerByName,
-  getDefaultSwimmer,
-} from "./service";
 import { ScrapingError, ValidationError } from "@/lib/scrapers";
+import { getSwimmers, getSwimmerByLicense, getSwimmerByName } from "./service";
 
 // Schema de validation des query params
 const QueryParamsSchema = z.object({
@@ -38,7 +33,7 @@ export async function GET(request) {
           error: "Paramètres invalides",
           details: validation.error.flatten().fieldErrors,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -46,7 +41,7 @@ export async function GET(request) {
     if (!competId) {
       return NextResponse.json(
         { error: "L'ID de la compétition (competId) est requis" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -56,13 +51,13 @@ export async function GET(request) {
       return NextResponse.json(swimmer);
     }
 
-    // Recherche par nom/prénom
+    // Recherche par nom/prénom (accepte aussi un seul des deux)
     if (firstName || lastName) {
       const swimmers = await getSwimmerByName(competId, firstName, lastName);
       if (swimmers.length === 0) {
         return NextResponse.json(
           { error: "Nageur non trouvé" },
-          { status: 404 }
+          { status: 404 },
         );
       }
       return NextResponse.json(swimmers);
@@ -79,14 +74,14 @@ export async function GET(request) {
           error: error.message,
           details: error.zodError?.flatten?.()?.fieldErrors,
         },
-        { status: error.status }
+        { status: error.status },
       );
     }
 
     if (error instanceof ScrapingError) {
       return NextResponse.json(
         { error: error.message, code: error.code },
-        { status: error.status }
+        { status: error.status },
       );
     }
 
@@ -94,7 +89,7 @@ export async function GET(request) {
     console.error("Erreur inattendue dans /api/swimmer:", error);
     return NextResponse.json(
       { error: "Erreur interne du serveur" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

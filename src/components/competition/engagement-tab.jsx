@@ -3,12 +3,14 @@
 /**
  * Onglet "Engagement" : liste scrollable de toutes les séries,
  * avec scroll automatique vers la série du nageur.
+ * Utilise le store de compétition pour accéder au competId.
  */
 
 import { useEffect, useRef } from "react";
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
+import { useCompetitionStore, useApiUrl } from "@/components/competition-store-provider";
 
 function SeriesListSkeleton() {
   return (
@@ -140,14 +142,20 @@ function SeriesList({ data }) {
   );
 }
 
-function SeriesContainer({ engagement, competId = "mock" }) {
-  const url = `/api/series?compet=${encodeURIComponent(competId)}&race=${encodeURIComponent(
-    engagement.label || "Épreuve",
-  )}&engagementId=${encodeURIComponent(engagement.id || "unknown")}&meta=${encodeURIComponent(
-    engagement.meta || "",
-  )}`;
+function SeriesContainer({ engagement }) {
+  const store = useCompetitionStore();
+  const url = useApiUrl("/api/series", {
+    race: engagement.label || "Épreuve",
+    engagementId: engagement.id || "unknown",
+    meta: engagement.meta || "",
+  });
 
-  const { data, error, isLoading } = useFetchJson(url);
+  const shouldFetch = Boolean(store.competId);
+  const { data, error, isLoading } = useFetchJson(shouldFetch ? url : null);
+
+  if (!store.competId) {
+    return <EmptyState message="ID de compétition manquant." />;
+  }
 
   if (isLoading) return <SeriesListSkeleton />;
 

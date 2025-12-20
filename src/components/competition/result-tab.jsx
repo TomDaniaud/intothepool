@@ -3,12 +3,14 @@
 /**
  * Onglet "Résultat" : liste scrollable des résultats de course,
  * avec temps en vert pour les records personnels battus.
+ * Utilise le store de compétition pour accéder aux IDs.
  */
 
 import { useEffect, useRef } from "react";
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
+import { useCompetitionStore, useApiUrl } from "@/components/competition-store-provider";
 
 function ResultsListSkeleton() {
   return (
@@ -148,13 +150,19 @@ function ResultsTable({ data }) {
 }
 
 function ResultsContainer({ engagement }) {
-  const url = `/api/results?race=${encodeURIComponent(
-    engagement.label || "Épreuve",
-  )}&engagementId=${encodeURIComponent(engagement.id || "unknown")}&meta=${encodeURIComponent(
-    engagement.meta || "",
-  )}`;
+  const store = useCompetitionStore();
+  const url = useApiUrl("/api/results", {
+    race: engagement.label || "Épreuve",
+    engagementId: engagement.id || "unknown",
+    meta: engagement.meta || "",
+  });
 
-  const { data, error, isLoading } = useFetchJson(url);
+  const shouldFetch = Boolean(store.competId);
+  const { data, error, isLoading } = useFetchJson(shouldFetch ? url : null);
+
+  if (!store.competId) {
+    return <EmptyState message="ID de compétition manquant." />;
+  }
 
   if (isLoading) return <ResultsListSkeleton />;
 
