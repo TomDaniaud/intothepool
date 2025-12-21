@@ -21,6 +21,7 @@ export { ClubScraper, clubScraper, ClubSchema } from "./club";
 export { SwimmerScraper, swimmerScraper, SwimmerSchema } from "./swimmer";
 export { SeriesScraper, seriesScraper, SeriesSchema, SeriesParamsSchema } from "./series";
 export { CompetitionScraper, competitionScraper, CompetitionSchema, LevelSchema } from "./competition";
+export { QualificationScraper, qualificationScraper, QualificationTimeSchema, QualificationGridSchema, GenderSchema } from "./qualification";
 
 // ============================================================================
 // FACTORY POUR CRÉER DES SCRAPERS CONFIGURÉS
@@ -30,6 +31,7 @@ import { ClubScraper } from "./club";
 import { SwimmerScraper } from "./swimmer";
 import { SeriesScraper } from "./series";
 import { CompetitionScraper } from "./competition";
+import { QualificationScraper } from "./qualification";
 
 /**
  * @typedef {Object} ScraperOptions
@@ -47,11 +49,12 @@ export function createScrapers(options = {}) {
   const swimmer = new SwimmerScraper(options);
   const series = new SeriesScraper(options);
   const competition = new CompetitionScraper(options);
+  const qualification = new QualificationScraper(options);
 
   // Connecter les dépendances
   swimmer.registerDependency("club", club);
 
-  return { club, swimmer, series, competition };
+  return { club, swimmer, series, competition, qualification };
 }
 
 // ============================================================================
