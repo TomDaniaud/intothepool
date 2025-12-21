@@ -25,7 +25,7 @@ export default function CompetitionPage() {
   // Lire les paramètres d'URL
   const competId = searchParams.get("competId");
   const license = searchParams.get("license");
-  const clubCode = searchParams.get("clubCode");
+  const clubCode = searchParams.get("clubId");
 
   // Si pas de competId, afficher un message
   if (!competId) {
@@ -82,6 +82,7 @@ export default function CompetitionPage() {
         {/* Gauche: engagements (timeline) */}
         <EngagementsPanelContainer
           competId={competId}
+          swimmerId={license}
           onSelect={onSelectEngagement}
         />
 

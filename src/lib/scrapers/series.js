@@ -273,84 +273,16 @@ export class SeriesScraper extends BaseScraper {
   }
 
   /**
-   * Génère des données mock déterministes
-   * @param {Object} params
-   * @param {string} [params.race]
-   * @param {string} [params.engagementId]
-   * @param {number | null} [params.seriesNumber]
-   * @param {number | null} [params.lane]
-   * @returns {AllSeriesResponse}
-   */
-  generateMockData({ race, engagementId, seriesNumber, lane }) {
-    const seed = Array.from(engagementId || "unknown").reduce(
-      (acc, char) => acc + char.charCodeAt(0),
-      0
-    );
-
-    const totalSeries = 3 + (seed % 4);
-    const swimmerSeriesNumber = seriesNumber || (seed % totalSeries) + 1;
-    const swimmerSeriesIndex = swimmerSeriesNumber - 1;
-
-    const series = Array.from({ length: totalSeries }, (_, seriesIdx) => {
-      const currentSeriesNumber = seriesIdx + 1;
-      const isSwimmerSeries = currentSeriesNumber === swimmerSeriesNumber;
-      const maxLanes = 8;
-
-      const swimmers = Array.from({ length: maxLanes }, (_, laneIdx) => {
-        const laneNumber = laneIdx + 1;
-        const base = 28 + ((seed + seriesIdx * 11 + laneNumber * 7) % 40) / 10;
-        const jitter = ((seed + seriesIdx * 5 + laneNumber * 13) % 15) / 100;
-        const timeSeconds = base + jitter;
-
-        const isSelected =
-          isSwimmerSeries &&
-          (lane != null ? laneNumber === lane : laneNumber === 5);
-
-        const minutes = Math.floor(timeSeconds / 60);
-        const rest = timeSeconds - minutes * 60;
-        const formattedTime = `${minutes}:${rest.toFixed(2).padStart(5, "0")}`;
-
-        return {
-          lane: laneNumber,
-          name: isSelected
-            ? "Vous"
-            : `Nageur ${String(seriesIdx * 8 + laneNumber).padStart(2, "0")}`,
-          club: `Club ${String.fromCharCode(
-            65 + ((seed + seriesIdx + laneNumber) % 6)
-          )}`,
-          entryTime: formattedTime,
-          isSelected,
-        };
-      });
-
-      return {
-        seriesNumber: currentSeriesNumber,
-        isSwimmerSeries,
-        swimmers,
-      };
-    });
-
-    return {
-      race: race || "Épreuve",
-      totalSeries,
-      swimmerSeriesIndex,
-      type: "simple",
-      series,
-    };
-  }
-
-  /**
    * Récupère toutes les séries pour une épreuve
    * @param {Object} params
    * @param {string} [params.competId]
    * @param {string} [params.race]
-   * @param {string} [params.engagementId]
    * @param {string} [params.meta]
    * @param {string} [params.date]
    * @param {string} [params.time]
    * @returns {Promise<AllSeriesResponse>}
    */
-  async getSeries({ competId, race, engagementId, meta, date, time }) {
+  async getSeries({ competId, race, meta, date, time }) {
     const { seriesNumber, lane } = this.parseRaceMeta(meta);
 
     // Si on a tous les paramètres nécessaires, essayer de scraper
@@ -382,14 +314,11 @@ export class SeriesScraper extends BaseScraper {
         }
       } catch (error) {
         console.warn(
-          "Erreur lors du scraping des séries, utilisation du fallback:",
+          "Erreur lors du scraping des séries",
           error
         );
       }
     }
-
-    // Fallback: générer des données mock
-    return this.generateMockData({ race, engagementId, seriesNumber, lane });
   }
 }
 

@@ -8,6 +8,7 @@
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
+import { capitalize } from "@/lib/utils";
 
 function SwimmerPanelSkeleton() {
   return (
@@ -59,11 +60,11 @@ function SwimmerPanel({ swimmer }) {
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Licence</dt>
-          <dd className="font-medium">{swimmer.license || "—"}</dd>
+          <dd className="font-medium">{swimmer.id || "—"}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Catégorie</dt>
-          <dd className="font-medium">{swimmer.category || "—"}</dd>
+          <dd className="font-medium">{swimmer.gender || "—"}</dd>
         </div>
       </dl>
     </div>
@@ -73,12 +74,12 @@ function SwimmerPanel({ swimmer }) {
 function ClubPanel({ club }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
-      <div className="text-sm font-semibold">Club</div>
+      <div className="text-sm font-semibold">{capitalize(club.type)}</div>
       <Separator className="my-3" />
       <dl className="grid gap-2 text-sm">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Nom</dt>
-          <dd className="font-medium">{club.name || "—"}</dd>
+          <dd className="font-medium">{capitalize(club.name) || "—"}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Ville</dt>
@@ -133,7 +134,7 @@ function SwimmerContainer({ competId, license }) {
 
 function ClubContainer({ competId, clubCode }) {
   const url = clubCode
-    ? `/api/club?competId=${encodeURIComponent(competId)}&code=${encodeURIComponent(clubCode)}`
+    ? `/api/club?competId=${encodeURIComponent(competId)}&clubId=${encodeURIComponent(clubCode)}`
     : null;
 
   const { data: club, error, isLoading } = useFetchJson(url);

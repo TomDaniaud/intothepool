@@ -11,7 +11,6 @@ import { XIcon } from "lucide-react";
 import { AnalysisTab } from "@/components/competition/analysis-tab";
 import { EngagementTab } from "@/components/competition/engagement-tab";
 import { ResultTab } from "@/components/competition/result-tab";
-import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 

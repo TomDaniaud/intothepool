@@ -141,8 +141,8 @@ function EngagementsPanel({ engagements, onSelect }) {
 /**
  * Container qui fetch les engagements.
  */
-export function EngagementsPanelContainer({ competId, onSelect }) {
-  const url = competId ? `/api/engagements?competId=${encodeURIComponent(competId)}` : null;
+export function EngagementsPanelContainer({ competId, swimmerId, onSelect }) {
+  const url = competId ? `/api/engagements?competId=${encodeURIComponent(competId)}&swimmerId=${encodeURIComponent(swimmerId)}` : null;
   const { data: engagements, error, isLoading } = useFetchJson(url);
 
   if (!competId) {
@@ -170,6 +170,8 @@ export function EngagementsPanelContainer({ competId, onSelect }) {
       </section>
     );
   }
+
+  console.log(engagements);
 
   return <EngagementsPanel engagements={engagements} onSelect={onSelect} />;
 }

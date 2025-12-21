@@ -115,10 +115,11 @@ function SeriesList({ data }) {
 
 export function EngagementTab({ competId, engagement }) {
   const params = new URLSearchParams();
-  if (competId) params.set("competId", competId);
-  if (engagement?.label) params.set("race", engagement.label);
-  if (engagement?.id) params.set("engagementId", engagement.id);
-  if (engagement?.meta) params.set("meta", engagement.meta);
+  params.set("competId", competId);
+  params.set("race", engagement.label);
+  params.set("meta", engagement.meta);
+  if (engagement.date) params.set("date", engagement.date);
+  if (engagement.time) params.set("time", engagement.time);
 
   const url = competId && engagement ? `/api/series?${params.toString()}` : null;
   const { data, error, isLoading } = useFetchJson(url);

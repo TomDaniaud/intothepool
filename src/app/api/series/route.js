@@ -7,7 +7,6 @@ import { ScrapingError, ValidationError } from "@/lib/scrapers";
 const QueryParamsSchema = z.object({
   competId: z.string().optional(),
   race: z.string().optional(),
-  engagementId: z.string().optional(),
   meta: z.string().optional(),
   date: z.string().optional(),
   time: z.string().optional(),
@@ -17,9 +16,8 @@ export async function GET(request) {
   try {
     const url = new URL(request.url);
     // Convertir null en undefined pour Zod
-    const competId = url.searchParams.get("compet") || url.searchParams.get("competId") || undefined;
+    const competId = url.searchParams.get("competId") || undefined;
     const race = url.searchParams.get("race") || undefined;
-    const engagementId = url.searchParams.get("engagementId") || undefined;
     const meta = url.searchParams.get("meta") || undefined;
     const date = url.searchParams.get("date") || undefined;
     const time = url.searchParams.get("time") || undefined;
@@ -28,7 +26,6 @@ export async function GET(request) {
     const validation = QueryParamsSchema.safeParse({
       competId,
       race,
-      engagementId,
       meta,
       date,
       time,
@@ -46,7 +43,6 @@ export async function GET(request) {
     const series = await getSeries({
       competId,
       race,
-      engagementId,
       meta,
       date,
       time,
