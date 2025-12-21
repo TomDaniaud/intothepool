@@ -15,6 +15,7 @@ import {
 export const ClubSchema = z.object({
   id: z.string().min(1, "L'ID du club est requis"),
   name: z.string().min(1, "Le nom du club est requis"),
+  type: z.enum(['club', 'région', 'autre']).default('club')
 });
 
 export const GetClubsParamsSchema = z.object({
@@ -67,14 +68,22 @@ export class ClubScraper extends BaseScraper {
         const a = $(element).find("a").first();
         const name = a.text().trim().toLowerCase();
         const link = a.attr("href") || "";
+        let type = 'club';
 
         try {
-          const id = new URL(link, "https://www.liveffn.com").searchParams.get(
+          let id = new URL(link, "https://www.liveffn.com").searchParams.get(
             "structure"
           );
 
+          if (!id) {
+            id = new URL(link, "https://www.liveffn.com").searchParams.get(
+              "ban_id"
+          ) ;
+          type = 'région';
+          }
+
           if (id && name) {
-            const club = this.safeValidate(ClubSchema, { id, name });
+            const club = this.safeValidate(ClubSchema, { id, name, type });
             if (club) {
               clubMap.set(id, club);
             }
@@ -113,6 +122,7 @@ export class ClubScraper extends BaseScraper {
    */
   async findByName(competId, name) {
     const clubs = await this.getAll(competId);
+    console.log(clubs);
     const normalizedName = name.toLowerCase().trim();
 
     return (

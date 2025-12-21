@@ -20,7 +20,7 @@ const MAX_ITEMS = 20;
  * @property {string} lastName
  * @property {string} competition - Nom de la compétition (affiché)
  * @property {string} competId - ID FFN de la compétition (pour les API)
- * @property {string} [clubCode] - Code du club (optionnel)
+ * @property {string} [clubId] - Code du club (optionnel)
  * @property {string} [license] - Numéro de licence (optionnel)
  * @property {number} createdAt
  */
@@ -70,7 +70,7 @@ export function SearchHistoryProvider({ children }) {
         lastName: String(x.lastName ?? ""),
         competition: String(x.competition ?? ""),
         competId: String(x.competId ?? ""),
-        clubCode: String(x.clubCode ?? ""),
+        clubId: String(x.clubId ?? ""),
         license: String(x.license ?? ""),
         createdAt: Number(x.createdAt ?? Date.now()),
       }));
@@ -88,13 +88,13 @@ export function SearchHistoryProvider({ children }) {
     }
   }, [items]);
 
-  const addSearch = useCallback(({ firstName, lastName, competition, competId, clubCode, license }) => {
+  const addSearch = useCallback(({ firstName, lastName, competition, competId, clubId, license }) => {
     const next = {
       firstName: String(firstName ?? "").trim(),
       lastName: String(lastName ?? "").trim(),
       competition: String(competition ?? "").trim(),
       competId: String(competId ?? "").trim(),
-      clubCode: String(clubCode ?? "").trim(),
+      clubId: String(clubId ?? "").trim(),
       license: String(license ?? "").trim(),
     };
 

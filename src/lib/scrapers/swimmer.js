@@ -217,9 +217,8 @@ export class SwimmerScraper extends BaseScraper {
 
         const fullName = splitLiveFfnDisplayedName(info[0].trim());
         const clubPart = info[1].split(" - ");
-        const clubName = clubPart[1]
-          ? clubPart[1].split(":")[0].trim().toLowerCase()
-          : "";
+        const clubName = clubPart[1].trim().toLowerCase();
+        console.log(clubName);
 
         const swimmer = {
           id: swimmerLink.id,

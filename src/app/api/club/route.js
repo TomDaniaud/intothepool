@@ -1,15 +1,16 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { getClubs, getClubByCode, getDefaultClub } from "./service";
 import {
   ScrapingError,
   ValidationError,
 } from "@/lib/scrapers";
+import { scrapers } from "@/lib/scrapers";
+
 
 // Schema de validation des query params
 const QueryParamsSchema = z.object({
   competId: z.string().min(1, "L'ID de la compétition est requis").optional(),
-  code: z.string().min(1).optional(),
+  clubId: z.string().min(1).optional(),
 });
 
 export async function GET(request) {
@@ -17,10 +18,11 @@ export async function GET(request) {
     const url = new URL(request.url);
     // Convertir null en undefined pour Zod
     const competId = url.searchParams.get("competId") || undefined;
-    const code = url.searchParams.get("code") || undefined;
+    const clubId = url.searchParams.get("clubId") || undefined;
+    const name = url.searchParams.get("name") || undefined;
 
     // Validation des paramètres
-    const validation = QueryParamsSchema.safeParse({ competId, code });
+    const validation = QueryParamsSchema.safeParse({ competId, clubId });
     if (!validation.success) {
       return NextResponse.json(
         {
@@ -39,15 +41,23 @@ export async function GET(request) {
       );
     }
 
-    // Recherche par code spécifique
-    if (code) {
-      const club = await getClubByCode(competId, code);
+    // Recherche par clubId spécifique
+    if (clubId) {
+      const club = await scrapers.club.getById(competId, clubId);
+      return NextResponse.json(club);
+    }
+
+    if (name) {
+      const club = await scrapers.club.findByName(competId, name);
       return NextResponse.json(club);
     }
 
     // Retourne tous les clubs de la compétition
-    const clubs = await getClubs(competId);
-    return NextResponse.json(clubs);
+    // const clubs = await getClubs(competId);
+    return NextResponse.json(
+        { error: "L'ID de la compétition (competId) est requis ainsi que le clubId" },
+        { status: 400 }
+      );
   } catch (error) {
     // Gestion des erreurs personnalisées
     if (error instanceof ValidationError) {
@@ -62,7 +72,7 @@ export async function GET(request) {
 
     if (error instanceof ScrapingError) {
       return NextResponse.json(
-        { error: error.message, code: error.code },
+        { error: error.message, clubId: error.clubId },
         { status: error.status }
       );
     }

@@ -15,13 +15,9 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
-export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
+export function EngagementDetailsSheet({ open, onOpenChange, engagement, competId, license }) {
   const title = engagement?.label || "Détails épreuve";
-  const description = engagement
-    ? engagement.meta
-      ? engagement.meta
-      : "Consultation de l’épreuve sélectionnée."
-    : "Sélectionnez une épreuve dans la timeline.";
+  const description = engagement?.meta || "Consultation de l'épreuve sélectionnée.";
 
   return (
     <DialogPrimitive.Root open={open} onOpenChange={onOpenChange}>
@@ -93,15 +89,15 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement }) {
             */}
             <div className="min-h-0 flex-1 overflow-auto p-4">
               <TabsContent value="engagement" className="min-h-0">
-                <EngagementTab engagement={engagement} />
+                <EngagementTab competId={competId} engagement={engagement} />
               </TabsContent>
 
               <TabsContent value="resultat" className="min-h-0">
-                <ResultTab engagement={engagement} />
+                <ResultTab competId={competId} engagement={engagement} />
               </TabsContent>
 
               <TabsContent value="analyse" className="min-h-0">
-                <AnalysisTab engagement={engagement} />
+                <AnalysisTab competId={competId} license={license} engagement={engagement} />
               </TabsContent>
             </div>
           </Tabs>
