@@ -15,7 +15,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { cn } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 
 function formatRelativeTime(createdAt) {
   if (!createdAt || Number.isNaN(createdAt)) return "";
@@ -62,9 +62,17 @@ function SidebarBody() {
   function handleSelectTab(id) {
     setActiveId(id);
     // Navigate to competition page when selecting a tab
-    if (pathname !== "/competition") {
-      router.push("/competition");
+    const selectedItem = items.find((item) => item.id === id) ?? null;
+    if (!selectedItem){
+      handleRemoveTab(id)
+      return;
     }
+    const params = new URLSearchParams();
+    if (selectedItem.competId) params.set("competId", selectedItem.competId);
+    if (selectedItem.license) params.set("license", selectedItem.license);
+    if (selectedItem.clubId) params.set("clubId", selectedItem.clubId);
+
+    router.push(`/competition?${params.toString()}`);
   }
 
   function handleRemoveTab(id) {
@@ -122,8 +130,8 @@ function SidebarBody() {
                   type="button"
                   className={
                     item.id === value
-                      ? "w-full truncate rounded-md bg-accent px-3 py-2 pr-10 text-left text-sm text-accent-foreground cursor-pointer"
-                      : "w-full truncate rounded-md px-3 py-2 pr-10 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                      ? "w-full truncate rounded-md bg-accent px-3 py-2 text-left text-sm text-accent-foreground cursor-pointer"
+                      : "w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
                   }
                   title={item.label}
                   onClick={() => handleSelectTab(item.id)}
@@ -137,7 +145,7 @@ function SidebarBody() {
                   className={cn(
                     "absolute right-1 top-1/2 -translate-y-1/2 rounded-md p-2",
                     "opacity-0 transition-opacity group-hover:opacity-100",
-                    "hover:bg-accent hover:text-accent-foreground cursor-pointer",
+                    "group-hover:bg-accent hover:text-accent-foreground cursor-pointer",
                     "focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                   )}
                   onClick={(e) => {
@@ -156,28 +164,28 @@ function SidebarBody() {
 
       <div className="px-4 pb-4">
         <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
-          <div className="flex items-baseline justify-between gap-3">
+          <div className="flex items-baseline justify-between gap-3 min-w-0">
             <div className="text-xs text-muted-foreground">Détails</div>
-            <div className="truncate text-xs text-muted-foreground">
+            <div className="truncate text-xs text-muted-foreground min-w-0 max-w-[60%] text-right">
               {activeItem ? formatRelativeTime(activeItem.createdAt) : ""}
             </div>
           </div>
 
           <div className="mt-2 grid gap-2 text-sm">
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Nom</span>
-              <span className="font-medium">{activeItem?.lastName || "—"}</span>
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <span className="text-muted-foreground flex-shrink-0">Nom</span>
+              <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">{activeItem?.lastName || "—"}</span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Prénom</span>
-              <span className="font-medium">
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <span className="text-muted-foreground flex-shrink-0">Prénom</span>
+              <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">
                 {activeItem?.firstName || "—"}
               </span>
             </div>
-            <div className="flex items-center justify-between gap-3">
-              <span className="text-muted-foreground">Compétition</span>
-              <span className="font-medium">
-                {activeItem?.competition || "—"}
+            <div className="flex items-center justify-between gap-3 min-w-0">
+              <span className="text-muted-foreground flex-shrink-0">Compétition</span>
+              <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">
+                {capitalize(activeItem?.competition || "—")}
               </span>
             </div>
           </div>

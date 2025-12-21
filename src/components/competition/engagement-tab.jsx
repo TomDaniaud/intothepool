@@ -118,8 +118,8 @@ export function EngagementTab({ competId, engagement }) {
   params.set("competId", competId);
   params.set("race", engagement.label);
   params.set("meta", engagement.meta);
-  if (engagement.date) params.set("date", engagement.date);
-  if (engagement.time) params.set("time", engagement.time);
+  params.set("date", engagement.date);
+  params.set("time", engagement.time);
 
   const url = competId && engagement ? `/api/series?${params.toString()}` : null;
   const { data, error, isLoading } = useFetchJson(url);
