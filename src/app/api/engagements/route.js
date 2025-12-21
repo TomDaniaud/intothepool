@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
-import { getEngagementById, getEngagements } from "./service";
+import { getEngagementById, getEngagements } from "@/lib/scrapers/engagement";
 
 export async function GET(request) {
   const url = new URL(request.url);
   const competId = url.searchParams.get("competId");
+  const swimmerId = url.searchParams.get("swimmerId");
   const id = url.searchParams.get("id");
+
+  // competId est requis pour toutes les opérations de scraping
+    if (competId && swimmerId) {
+      const engagements = await getEngagements(competId, swimmerId);
+      return NextResponse.json(engagements);
+    }
 
   // Si un ID spécifique est demandé
   if (id) {
@@ -18,7 +25,9 @@ export async function GET(request) {
     return NextResponse.json(engagement);
   }
 
-  // Sinon, retourne tous les engagements
-  const engagements = await getEngagements(competId);
-  return NextResponse.json(engagements);
+  // Sinon erreur
+  return NextResponse.json(
+        { error: "Parametres manquants" },
+        { status: 404 },
+      );
 }

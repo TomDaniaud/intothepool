@@ -2,12 +2,13 @@
 
 /**
  * Panneau droite: infos nageur + infos club.
- * Avec fetch depuis les API.
+ * Reçoit competId, license, clubCode en props.
  */
 
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
+import { capitalize } from "@/lib/utils";
 
 function SwimmerPanelSkeleton() {
   return (
@@ -15,11 +16,8 @@ function SwimmerPanelSkeleton() {
       <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <Separator className="my-3" />
       <div className="space-y-3">
-        {Array.from({ length: 4 }).map((_, index) => (
-          <div
-            key={`swimmer-skeleton-${index}`}
-            className="flex items-center justify-between gap-3"
-          >
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between gap-3">
             <div className="h-3 w-20 animate-pulse rounded bg-muted" />
             <div className="h-3 w-24 animate-pulse rounded bg-muted" />
           </div>
@@ -35,11 +33,8 @@ function ClubPanelSkeleton() {
       <div className="h-4 w-12 animate-pulse rounded bg-muted" />
       <Separator className="my-3" />
       <div className="space-y-3">
-        {Array.from({ length: 3 }).map((_, index) => (
-          <div
-            key={`club-skeleton-${index}`}
-            className="flex items-center justify-between gap-3"
-          >
+        {Array.from({ length: 3 }).map((_, i) => (
+          <div key={i} className="flex items-center justify-between gap-3">
             <div className="h-3 w-16 animate-pulse rounded bg-muted" />
             <div className="h-3 w-28 animate-pulse rounded bg-muted" />
           </div>
@@ -65,11 +60,11 @@ function SwimmerPanel({ swimmer }) {
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Licence</dt>
-          <dd className="font-medium">{swimmer.license || "—"}</dd>
+          <dd className="font-medium">{swimmer.id || "—"}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Catégorie</dt>
-          <dd className="font-medium">{swimmer.category || "—"}</dd>
+          <dd className="font-medium">{swimmer.gender || "—"}</dd>
         </div>
       </dl>
     </div>
@@ -79,12 +74,12 @@ function SwimmerPanel({ swimmer }) {
 function ClubPanel({ club }) {
   return (
     <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
-      <div className="text-sm font-semibold">Club</div>
+      <div className="text-sm font-semibold">{capitalize(club.type)}</div>
       <Separator className="my-3" />
       <dl className="grid gap-2 text-sm">
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Nom</dt>
-          <dd className="font-medium">{club.name || "—"}</dd>
+          <dd className="font-medium">{capitalize(club.name) || "—"}</dd>
         </div>
         <div className="flex items-center justify-between gap-3">
           <dt className="text-muted-foreground">Ville</dt>
@@ -99,16 +94,20 @@ function ClubPanel({ club }) {
   );
 }
 
-function SwimmerContainer({ firstName, lastName }) {
-  const params = new URLSearchParams();
-  if (firstName) params.set("firstName", firstName);
-  if (lastName) params.set("lastName", lastName);
-
-  const url = params.toString()
-    ? `/api/swimmer?${params.toString()}`
-    : "/api/swimmer";
+function SwimmerContainer({ competId, license }) {
+  const url = license
+    ? `/api/swimmer?competId=${encodeURIComponent(competId)}&license=${encodeURIComponent(license)}`
+    : null;
 
   const { data: swimmer, error, isLoading } = useFetchJson(url);
+
+  if (!license) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <EmptyState message="Aucun nageur sélectionné." />
+      </div>
+    );
+  }
 
   if (isLoading) return <SwimmerPanelSkeleton />;
 
@@ -120,7 +119,9 @@ function SwimmerContainer({ firstName, lastName }) {
     );
   }
 
-  if (!swimmer) {
+  const swimmerData = Array.isArray(swimmer) ? swimmer[0] : swimmer;
+
+  if (!swimmerData) {
     return (
       <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
         <EmptyState message="Aucun nageur trouvé." />
@@ -128,13 +129,23 @@ function SwimmerContainer({ firstName, lastName }) {
     );
   }
 
-  return <SwimmerPanel swimmer={swimmer} />;
+  return <SwimmerPanel swimmer={swimmerData} />;
 }
 
-function ClubContainer({ code }) {
-  const url = code ? `/api/club?code=${encodeURIComponent(code)}` : "/api/club";
+function ClubContainer({ competId, clubCode }) {
+  const url = clubCode
+    ? `/api/club?competId=${encodeURIComponent(competId)}&clubId=${encodeURIComponent(clubCode)}`
+    : null;
 
   const { data: club, error, isLoading } = useFetchJson(url);
+
+  if (!clubCode) {
+    return (
+      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <EmptyState message="Aucun club sélectionné." />
+      </div>
+    );
+  }
 
   if (isLoading) return <ClubPanelSkeleton />;
 
@@ -160,27 +171,11 @@ function ClubContainer({ code }) {
 /**
  * Container principal qui fetch nageur et club.
  */
-export function SwimmerClubPanelContainer({
-  swimmerFirstName,
-  swimmerLastName,
-  clubCode,
-}) {
+export function SwimmerClubPanelContainer({ competId, license, clubCode }) {
   return (
     <section className="space-y-4">
-      <SwimmerContainer firstName={swimmerFirstName} lastName={swimmerLastName} />
-      <ClubContainer code={clubCode} />
-    </section>
-  );
-}
-
-/**
- * Version avec props directes (pour usage legacy ou tests).
- */
-export function SwimmerClubPanel({ swimmer, club }) {
-  return (
-    <section className="space-y-4">
-      <SwimmerPanel swimmer={swimmer} />
-      <ClubPanel club={club} />
+      <SwimmerContainer competId={competId} license={license} />
+      <ClubContainer competId={competId} clubCode={clubCode} />
     </section>
   );
 }

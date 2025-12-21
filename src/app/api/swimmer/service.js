@@ -1,77 +1,56 @@
 /**
- * Service pour les nageurs.
- * Pour l'instant retourne des mock data.
- * Plus tard: scraping depuis la FFN ou autre source.
+ * Service pour les nageurs - Utilise le SwimmerScraper
  */
+import { scrapers } from "@/lib/scrapers";
+
+// Réexporter les erreurs pour la route
+export {
+  ScrapingError,
+  ValidationError,
+  NotFoundError,
+  CompetitionClosedError,
+} from "@/lib/scrapers";
 
 /**
- * @typedef {Object} Swimmer
- * @property {string} firstName
- * @property {string} lastName
- * @property {string} license
- * @property {string} category
+ * Récupère tous les nageurs d'une compétition
+ * @param {string} competId
  */
-
-/** @type {Swimmer[]} */
-const mockSwimmers = [
-  {
-    firstName: "Camille",
-    lastName: "Dupont",
-    license: "A123456",
-    category: "Senior",
-  },
-  {
-    firstName: "Lucas",
-    lastName: "Martin",
-    license: "B789012",
-    category: "Junior",
-  },
-];
+export async function getSwimmers(competId) {
+  return scrapers.swimmer.getAll(competId);
+}
 
 /**
- * Récupère un nageur par licence.
+ * Récupère un nageur par sa licence/ID
+ * @param {string} competId
  * @param {string} license
- * @returns {Promise<Swimmer | null>}
  */
-export async function getSwimmerByLicense(license) {
-  // TODO: scraping basé sur la licence
-  return mockSwimmers.find((s) => s.license === license) || null;
+export async function getSwimmerByLicense(competId, license) {
+  return scrapers.swimmer.getById(competId, license);
 }
 
 /**
- * Récupère un nageur par nom/prénom.
- * @param {string} firstName
- * @param {string} lastName
- * @returns {Promise<Swimmer | null>}
+ * Recherche des nageurs par nom/prénom
+ * @param {string} competId
+ * @param {string} [firstName]
+ * @param {string} [lastName]
  */
-export async function getSwimmerByName(firstName, lastName) {
-  // TODO: scraping basé sur le nom
-  // Pour l'instant, on retourne un mock basé sur les paramètres
-  const found = mockSwimmers.find(
-    (s) =>
-      s.firstName.toLowerCase() === firstName?.toLowerCase() &&
-      s.lastName.toLowerCase() === lastName?.toLowerCase()
-  );
-
-  if (found) return found;
-
-  // Si pas trouvé, on crée un mock avec les paramètres fournis
-  if (firstName || lastName) {
-    return {
-      firstName: firstName || "",
-      lastName: lastName || "",
-      license: "MOCK001",
-      category: "Senior",
-    };
-  }
-
-  return null;
+export async function getSwimmerByName(competId, firstName, lastName) {
+  return scrapers.swimmer.search(competId, firstName, lastName);
 }
 
 /**
- * Récupère le nageur par défaut (mock).
- * @returns {Promise<Swimmer>}
+ * Récupère les nageurs d'un club
+ * @param {string} competId
+ * @param {string} clubId
  */
-export async function getDefaultSwimmer() {
-  return mockSwimmers[0];
+export async function getSwimmersByClub(competId, clubId) {
+  return scrapers.swimmer.getByClub(competId, clubId);
+}
+
+/**
+ * Récupère le premier nageur (fallback)
+ * @param {string} competId
+ */
+export async function getDefaultSwimmer(competId) {
+  return scrapers.swimmer.getFirst(competId);
 }
