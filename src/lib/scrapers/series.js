@@ -182,54 +182,72 @@ export class SeriesScraper extends BaseScraper {
   }
 
   /**
-   * Récupère les détails d'une série depuis la FFN
+   * Récupère TOUTES les séries d'une épreuve depuis la FFN
    * @param {string} competId
    * @param {SeriesParams} params
-   * @param {string} startTime
-   * @returns {Promise<Series | null>}
+   * @param {string} swimmerStartTime - L'heure de la série du nageur (pour la marquer)
+   * @returns {Promise<{allSeries: Series[], swimmerSeriesIndex: number, race: string, type: "simple"|"relay"} | null>}
    */
-  async getSeriesFromFFN(competId, params, startTime) {
+  async getAllSeriesFromFFN(competId, params, swimmerStartTime) {
     const cacheKey = this.getCacheKey(
-      "series-ffn",
+      "all-series-ffn",
       competId,
       params,
-      startTime
     );
 
     return this.getOrFetch(cacheKey, async () => {
       const url = URL_FFN_SERIES(competId, params);
       const $ = await this.fetchCheerio(url);
 
+      /** @type {Series[]} */
+      const allSeries = [];
       /** @type {Series | null} */
-      let selectedSeries = null;
-      let inRange = false;
+      let currentSeries = null;
+      let race = "";
+      let type = /** @type {"simple"|"relay"} */ ("simple");
+      let swimmerSeriesIndex = -1;
 
       $("tr").each((_, el) => {
         const row = $(el);
 
+        // Nouvelle série détectée
         if (row.find("td.prgTitre").length) {
+          // Sauvegarder la série précédente si elle existe
+          if (currentSeries && currentSeries.swimmers.length > 0) {
+            const validated = this.safeValidate(SeriesSchema, currentSeries);
+            if (validated) {
+              allSeries.push(validated);
+            }
+          }
+
           const title = row.find("td.prgTitre").text().trim();
           const courseTime = row.find("td.prgTime").text().trim();
-          const [courseName, _, nbAndMax] = title.split("-");
+          const [courseName, , nbAndMax] = title.split("-");
           const nbMatch = nbAndMax?.match(/\d+/g) || ["", ""];
           const [nb, maxNb] = nbMatch;
 
-          if (courseTime === startTime) {
-            inRange = true;
-            selectedSeries = {
-              type: "simple",
-              nb: nb || "",
-              maxNb: maxNb || "",
-              race: courseName?.trim() || "",
-              time: courseTime,
-              swimmers: [],
-            };
-          } else if (inRange) {
-            return false;
+          // Garder le nom de l'épreuve (première série)
+          if (!race && courseName) {
+            race = courseName.trim();
+          }
+
+          currentSeries = {
+            type: "simple",
+            nb: nb || String(allSeries.length + 1),
+            maxNb: maxNb || "",
+            race: courseName?.trim() || "",
+            time: courseTime,
+            swimmers: [],
+          };
+
+          // Marquer l'index de la série du nageur
+          if (courseTime === swimmerStartTime) {
+            swimmerSeriesIndex = allSeries.length; // Index avant push
           }
         }
 
-        if (row.hasClass("survol") && selectedSeries) {
+        // Nageur dans la série courante
+        if (row.hasClass("survol") && currentSeries) {
           const tds = row.find("td");
           if (tds.length >= 6) {
             const chrono = $(tds[5]).text().trim();
@@ -247,28 +265,42 @@ export class SeriesScraper extends BaseScraper {
 
             const validSwimmer = this.safeValidate(
               SwimmerInSeriesSchema,
-              swimmer
+              swimmer,
             );
             if (validSwimmer) {
-              selectedSeries.swimmers.push(validSwimmer);
+              currentSeries.swimmers.push(validSwimmer);
             }
           }
         }
       });
 
-      // Détecter si c'est un relais
+      // Ajouter la dernière série
+      if (currentSeries && currentSeries.swimmers.length > 0) {
+        const validated = this.safeValidate(SeriesSchema, currentSeries);
+        if (validated) {
+          allSeries.push(validated);
+        }
+      }
+
+      if (allSeries.length === 0) {
+        return null;
+      }
+
+      // Détecter si c'est un relais (2e nageur sans chrono)
+      const firstSeries = allSeries[0];
       if (
-        selectedSeries?.swimmers[1] &&
-        selectedSeries.swimmers[1].lastChrono === ""
+        firstSeries?.swimmers[1] &&
+        firstSeries.swimmers[1].lastChrono === ""
       ) {
-        selectedSeries.type = "relay";
+        type = "relay";
       }
 
-      if (selectedSeries) {
-        return this.safeValidate(SeriesSchema, selectedSeries);
+      // Si on n'a pas trouvé la série du nageur, fallback sur la première
+      if (swimmerSeriesIndex === -1) {
+        swimmerSeriesIndex = 0;
       }
 
-      return null;
+      return { allSeries, swimmerSeriesIndex, race, type };
     });
   }
 
@@ -280,7 +312,7 @@ export class SeriesScraper extends BaseScraper {
    * @param {string} [params.meta]
    * @param {string} [params.date]
    * @param {string} [params.time]
-   * @returns {Promise<AllSeriesResponse>}
+   * @returns {Promise<AllSeriesResponse | null>}
    */
   async getSeries({ competId, race, meta, date, time }) {
     const { seriesNumber, lane } = this.parseRaceMeta(meta);
@@ -289,36 +321,43 @@ export class SeriesScraper extends BaseScraper {
     if (competId && date && time) {
       try {
         const params = await this.getProgram(competId, date, time);
-        const series = await this.getSeriesFromFFN(competId, params, time);
+        const result = await this.getAllSeriesFromFFN(competId, params, time);
 
-        if (series) {
+        if (result) {
+          const { allSeries, swimmerSeriesIndex, race: scrapedRace, type } = result;
+
+          // Formater toutes les séries
+          const formattedSeries = allSeries.map((series, seriesIdx) => {
+            const isSwimmerSeries = seriesIdx === swimmerSeriesIndex;
+
+            return {
+              seriesNumber: Number.parseInt(series.nb) || seriesIdx + 1,
+              isSwimmerSeries,
+              swimmers: series.swimmers.map((s, swimmerIdx) => ({
+                lane: swimmerIdx + 1,
+                name: s.name,
+                club: s.club,
+                entryTime: s.lastChrono,
+                // Le nageur sélectionné: dans sa série, à son couloir (ou couloir 5 par défaut)
+                isSelected: isSwimmerSeries && swimmerIdx === (lane ? lane - 1 : 4),
+              })),
+            };
+          });
+
           return {
-            race: series.race || race || "Épreuve",
-            totalSeries: Number.parseInt(series.maxNb) || 1,
-            swimmerSeriesIndex: (Number.parseInt(series.nb) || 1) - 1,
-            type: series.type,
-            series: [
-              {
-                seriesNumber: Number.parseInt(series.nb) || 1,
-                isSwimmerSeries: true,
-                swimmers: series.swimmers.map((s, idx) => ({
-                  lane: idx + 1,
-                  name: s.name,
-                  club: s.club,
-                  entryTime: s.lastChrono,
-                  isSelected: idx === (lane ? lane - 1 : 4),
-                })),
-              },
-            ],
+            race: scrapedRace || race || "Épreuve",
+            totalSeries: allSeries.length,
+            swimmerSeriesIndex,
+            type,
+            series: formattedSeries,
           };
         }
       } catch (error) {
-        console.warn(
-          "Erreur lors du scraping des séries",
-          error
-        );
+        console.warn("Erreur lors du scraping des séries", error);
       }
     }
+
+    return null;
   }
 }
 
