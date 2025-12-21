@@ -30,7 +30,7 @@ export default function Home() {
 
     const capFirstName = capitalize(firstName.trim());
     const capLastName = capitalize(lastName.trim());
-    const capLocation = location.trim().toLowerCase();
+    const capLocation = capitalize(location.trim());
 
     if (!capFirstName || !capLastName || !capLocation) {
       return;
