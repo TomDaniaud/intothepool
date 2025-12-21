@@ -2,27 +2,76 @@
 
 import { ArrowRight, Info, Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState } from "react";
+import { useId, useState, useEffect } from "react";
 
 import { useSearchHistory } from "@/components/search-history-provider";
+import { CompetCard, CompetCardSelected } from "@/components/compet-card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { capitalize } from "@/lib/utils";
+import { capitalize, cn } from "@/lib/utils";
 
 export default function Home() {
   const [lastName, setLastName] = useState("");
   const [firstName, setFirstName] = useState("");
-  const [location, setLocation] = useState("");
+  const [filterQuery, setFilterQuery] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [competitions, setCompetitions] = useState([]);
+  const [competitionsLoading, setCompetitionsLoading] = useState(true);
+  const [selectedCompetition, setSelectedCompetition] = useState(null);
   const router = useRouter();
 
   const { addSearch } = useSearchHistory();
 
   const lastNameId = useId();
   const firstNameId = useId();
-  const locationId = useId();
+
+  // Charger toutes les compétitions au montage
+  useEffect(() => {
+    async function fetchCompetitions() {
+      try {
+        const res = await fetch("/api/competition");
+        if (res.ok) {
+          const data = await res.json();
+          setCompetitions(data || []);
+        }
+      } catch (err) {
+        console.error("Erreur chargement compétitions:", err);
+      } finally {
+        setCompetitionsLoading(false);
+      }
+    }
+    fetchCompetitions();
+  }, []);
+
+  // Sélectionner une compétition depuis la grille
+  function selectCompetition(comp) {
+    setSelectedCompetition(comp);
+    setFilterQuery("");
+  }
+
+  // Annuler la sélection
+  function cancelSelection() {
+    setSelectedCompetition(null);
+  }
+
+  // Gère le filtre et auto-sélection si match exact
+  function handleFilterChange(value) {
+    setFilterQuery(value);
+    if (!value.trim()) return;
+    
+    const query = value.toLowerCase().trim();
+    const exactMatch = competitions.find(
+      (comp) =>
+        comp.location?.toLowerCase() === query ||
+        comp.name?.toLowerCase() === query
+    );
+    if (exactMatch) {
+      setSelectedCompetition(exactMatch);
+      setFilterQuery("");
+    }
+  }
 
   async function onSubmit(event) {
     event.preventDefault();
@@ -30,30 +79,23 @@ export default function Home() {
 
     const capFirstName = capitalize(firstName.trim());
     const capLastName = capitalize(lastName.trim());
-    const capLocation = capitalize(location.trim());
 
-    if (!capFirstName || !capLastName || !capLocation) {
+    if (!capFirstName || !capLastName || !selectedCompetition) {
+      if (!selectedCompetition) {
+        setError("Sélectionne une compétition dans la liste ci-dessous.");
+      }
       return;
     }
 
     setIsLoading(true);
 
     try {
-      // 1. Résoudre le competId via l'API
-      let competId = null;
-
-      if (capLocation) {
-        const res = await fetch(`/api/competition?location=${encodeURIComponent(capLocation)}`);
-        if (res.ok) {
-          const list = await res.json();
-          if (list?.length > 0) {
-            competId = list[0].ffnId;
-          }
-        }
-      }
+      // 1. Utiliser le competId de la compétition sélectionnée
+      const competId = selectedCompetition.ffnId;
+      const capLocation = selectedCompetition.location || selectedCompetition.name;
 
       if (!competId) {
-        setError("Aucune compétition trouvée pour ce lieu.");
+        setError("Aucune compétition sélectionnée.");
         setIsLoading(false);
         return;
       }
@@ -93,7 +135,7 @@ export default function Home() {
       
       console.log(`${swimmerId}, ${clubId}`);
       if (!swimmerId || !clubId) {
-        setError("Aucun nageur trouvé.");
+        setError("Ce nageur n'est pas inscrit pour cette competiton");
         setIsLoading(false);
         return;
       }
@@ -165,7 +207,8 @@ export default function Home() {
                 autoComplete="family-name"
                 placeholder="Daniaud"
                 value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
+                className={cn(error && 'ring-2 ring-red-300')}
+                onChange={(e) => { setLastName(e.target.value); setError(null); }}
               />
             </div>
 
@@ -177,24 +220,32 @@ export default function Home() {
                 autoComplete="given-name"
                 placeholder="Nora"
                 value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
+                className={cn(error && 'ring-2 ring-red-300')}
+                onChange={(e) => { setFirstName(e.target.value); setError(null); }}
               />
             </div>
 
+            {/* Compétition: soit input filtre, soit card sélectionnée */}
             <div className="space-y-2">
-              <Label htmlFor={locationId}>Lieu de la compétition</Label>
-              <Input
-                id={locationId}
-                name="location"
-                placeholder="Dunkerque"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-              />
+              <Label htmlFor="competFilter">Compétition</Label>
+              {selectedCompetition ? (
+                <CompetCardSelected
+                  competition={selectedCompetition}
+                  onCancel={cancelSelection}
+                />
+              ) : (
+                <Input
+                  id="competFilter"
+                  placeholder="Filtrer par lieu..."
+                  value={filterQuery}
+                  onChange={(e) => { handleFilterChange(e.target.value); setError(null); }}
+                />
+              )}
             </div>
 
             <div className="space-y-2">
-              <Label className="text-background">Lancez la recherche</Label>
-              <Button type="submit" className="w-full group" disabled={isLoading}>
+              <Label className="invisible">Rechercher</Label>
+              <Button type="submit" className="w-full group" disabled={isLoading || !selectedCompetition}>
                 {isLoading ? (
                   <>
                     <Loader2 className="size-4 animate-spin" />
@@ -212,16 +263,36 @@ export default function Home() {
           </form>
         </div>
 
-        <div className="mt-6 w-full rounded-2xl border border-border bg-background/70 p-4 backdrop-blur sm:mt-8 sm:p-5">
-          <div className="flex items-center justify-between gap-3">
-            <p className="text-sm font-semibold text-foreground">Comment ça marche</p>
-            <p className="text-xs text-muted-foreground">3 étapes</p>
-          </div>
-          <ol className="mt-3 space-y-2 pl-5 text-sm text-muted-foreground marker:text-muted-foreground">
-            <li>Renseigne le nom, le prénom et le lieu.</li>
-            <li>Lance la recherche pour ouvrir la page compétition.</li>
-            <li>Ouvre une épreuve pour voir Engagement / Résultat / Analyse.</li>
-          </ol>
+        {/* Grille des compétitions disponibles */}
+        <div className="mt-8 w-full">
+          <h2 className="mb-4 text-lg font-semibold">Compétitions disponibles</h2>
+          {competitionsLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : competitions.length === 0 ? (
+            <p className="text-sm text-muted-foreground">Aucune compétition disponible.</p>
+          ) : (
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {competitions
+                .filter((comp) => {
+                  if (!filterQuery.trim()) return true;
+                  const query = filterQuery.toLowerCase();
+                  return (
+                    comp.location?.toLowerCase().includes(query) ||
+                    comp.name?.toLowerCase().includes(query)
+                  );
+                })
+                .map((comp) => (
+                  <CompetCard
+                    key={comp.ffnId}
+                    competition={comp}
+                    onClick={() => selectCompetition(comp)}
+                    selected={selectedCompetition?.ffnId === comp.ffnId}
+                  />
+                ))}
+            </div>
+          )}
         </div>
       </section>
     </main>
