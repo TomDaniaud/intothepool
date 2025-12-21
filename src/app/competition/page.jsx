@@ -6,7 +6,7 @@
  * Ces params sont passés à chaque composant enfant.
  */
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Share2, Check } from "lucide-react";
 
@@ -17,6 +17,20 @@ import { Button } from "@/components/ui/button";
 import { EmptyState } from "@/components/ui/fetch-states";
 
 export default function CompetitionPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto flex w-full max-w-6xl items-center justify-center px-6 py-20">
+          <EmptyState message="Chargement…" />
+        </main>
+      }
+    >
+      <CompetitionPageContent />
+    </Suspense>
+  );
+}
+
+function CompetitionPageContent() {
   const searchParams = useSearchParams();
   const [selectedEngagement, setSelectedEngagement] = useState(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
