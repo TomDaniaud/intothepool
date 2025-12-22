@@ -6,6 +6,7 @@
  */
 
 import { PerformanceChart } from "@/components/competition/performance-chart";
+import { useQualificationTime } from "@/hooks/useQualification";
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
@@ -28,9 +29,16 @@ function AnalysisSkeleton() {
   );
 }
 
-function StatCard({ label, value, subtext, highlight }) {
+function StatCard({ label, value, subtext, highlight, featured }) {
   return (
-    <div className="rounded-md border border-border bg-muted/20 p-3">
+    <div
+      className={cn(
+        "rounded-md border p-3",
+        featured
+          ? "border-2 border-yellow-400 bg-yellow-50 dark:border-yellow-500 dark:bg-yellow-950/20"
+          : "border-border bg-muted/20"
+      )}
+    >
       <div className="text-xs text-muted-foreground">{label}</div>
       <div
         className={cn(
@@ -91,7 +99,7 @@ function SplitsTable({ splits }) {
   );
 }
 
-function AnalysisContent({ data }) {
+function AnalysisContent({ data, qualificationTime }) {
   if (!data) {
     return <EmptyState message="Aucune donnée d'analyse disponible." />;
   }
@@ -126,7 +134,12 @@ function AnalysisContent({ data }) {
               subtext="depuis le début"
               highlight={progressionHighlight}
             />
-            <StatCard label="Courses" value={data.stats.totalRaces} subtext="cette saison" />
+            <StatCard
+              label="Temps qualif"
+              value={qualificationTime || "—"}
+              subtext="France Open"
+              featured={!!qualificationTime}
+            />
             <StatCard label="Podiums" value={data.stats.podiums} />
             <StatCard label="Records perso" value={data.stats.personalBests} subtext="battus" />
           </div>
@@ -169,6 +182,7 @@ function AnalysisContent({ data }) {
 
 export function AnalysisTab({ competId, license, engagement }) {
   const eventId = engagement?.label?.replace(/\s+/g, "") || null;
+  const eventLabel = engagement?.label || null;
 
   const params = new URLSearchParams();
   if (eventId) params.set("eventId", eventId);
@@ -177,6 +191,24 @@ export function AnalysisTab({ competId, license, engagement }) {
   const url = eventId ? `/api/analysis?${params.toString()}` : null;
   const { data, error, isLoading } = useFetchJson(url);
 
+  // Récupérer les infos du nageur pour le temps de qualif
+  const swimmerUrl = license && competId
+    ? `/api/swimmer?competId=${competId}&license=${license}`
+    : null;
+  const { data: swimmerData } = useFetchJson(swimmerUrl);
+  const swimmer = Array.isArray(swimmerData) ? swimmerData[0] : swimmerData;
+
+  // Récupérer le temps de qualification pour cette course
+  const birthYear = swimmer?.birthYear;
+  const gender = swimmer?.gender || "M";
+  // Toujours appeler le hook, mais passer null si données manquantes
+  const { data: qualData } = useQualificationTime(
+    birthYear && gender && engagement?.label
+      ? { gender, birthYear, race: engagement.label }
+      : { gender: null, birthYear: null, race: null }
+  );
+  const qualificationTime = qualData?.time;
+
   if (!engagement) {
     return <p className="text-sm text-muted-foreground">Aucune épreuve sélectionnée.</p>;
   }
@@ -184,5 +216,5 @@ export function AnalysisTab({ competId, license, engagement }) {
   if (isLoading) return <AnalysisSkeleton />;
   if (error) return <FetchError error={error} />;
 
-  return <AnalysisContent data={data} />;
+  return <AnalysisContent data={data} qualificationTime={qualificationTime} />;
 }

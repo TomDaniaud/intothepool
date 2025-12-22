@@ -15,6 +15,7 @@ export const SwimmerSchema = z.object({
   gender: z.enum(["Male", "Female"]),
   clubId: z.string().optional(),
   clubName: z.string().optional(),
+  birthYear: z.string().min(1, "L'année de naissance est requise"),
 });
 
 export const SwimmerIndexEntrySchema = z.object({
@@ -217,6 +218,7 @@ export class SwimmerScraper extends BaseScraper {
 
         const fullName = splitLiveFfnDisplayedName(info[0].trim());
         const clubPart = info[1].split(" - ");
+        const birthYear = clubPart[0].split(")")[0].trim();
         const clubName = clubPart[1].trim().toLowerCase();
         console.log(clubName);
 
@@ -226,6 +228,7 @@ export class SwimmerScraper extends BaseScraper {
           lastName: fullName.lastName,
           gender,
           clubName,
+          birthYear,
         };
 
         return this.safeValidate(SwimmerSchema, swimmer);

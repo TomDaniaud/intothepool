@@ -14,7 +14,7 @@ import { BaseScraper, NotFoundError } from "./base";
 export const GenderSchema = z.enum(["F", "M"]);
 
 export const QualificationTimeSchema = z.object({
-  event: z.string().min(1),
+  race: z.string().min(1),
   gender: GenderSchema,
   age: z.number().int().min(14).max(99),
   birthYear: z.number().int(),
@@ -24,7 +24,7 @@ export const QualificationTimeSchema = z.object({
 
 export const QualificationGridSchema = z.object({
   season: z.string(),
-  competition: z.string(),
+  event: z.string(),
   qualifications: z.array(QualificationTimeSchema),
 });
 
@@ -43,25 +43,44 @@ export const QualificationGridSchema = z.object({
 // France Open d'été = idclt 79
 const FRANCE_OPEN_ETE_ID = 79;
 
-// Mapping des épreuves (normalisation)
-const EVENT_ALIASES = {
-  "50 Nage Libre": "50 NL",
-  "100 Nage Libre": "100 NL",
-  "200 Nage Libre": "200 NL",
-  "400 Nage Libre": "400 NL",
-  "800 Nage Libre": "800 NL",
-  "1500 Nage Libre": "1500 NL",
-  "50 Dos": "50 Dos",
-  "100 Dos": "100 Dos",
-  "200 Dos": "200 Dos",
-  "50 Brasse": "50 Brasse",
-  "100 Brasse": "100 Brasse",
-  "200 Brasse": "200 Brasse",
-  "50 Papillon": "50 Pap",
-  "100 Papillon": "100 Pap",
-  "200 Papillon": "200 Pap",
-  "200 4 Nages": "200 4N",
-  "400 4 Nages": "400 4N",
+// Événements disponibles pour le scraping de qualification
+const AVAILABLE_EVENTS = [
+  { id: "france-open-ete", idclt: 79, name: "France Open (été)" },
+  // Ajouter d'autres événements ici au fur et à mesure
+  // { id: "france-open-hiver", idclt: XX, name: "France Open (hiver)" },
+  // { id: "championnats-france", idclt: XX, name: "Championnats de France" },
+];
+
+// Événement par défaut (premier de la liste)
+const DEFAULT_EVENT = AVAILABLE_EVENTS[0];
+
+// Saison par défaut (la plus récente)
+function getDefaultSeason() {
+  const now = new Date();
+  const month = now.getMonth();
+  const year = now.getFullYear();
+  return month >= 8 ? year + 1 : year;
+}
+
+// Mapping des courses (normalisation)
+const RACE_ALIASES = {
+  "50 nage libre": "50 NL",
+  "100 nage libre": "100 NL",
+  "200 nage libre": "200 NL",
+  "400 nage libre": "400 NL",
+  "800 nage libre": "800 NL",
+  "1500 nage libre": "1500 NL",
+  "50 dos": "50 Dos",
+  "100 dos": "100 Dos",
+  "200 dos": "200 Dos",
+  "50 brasse": "50 Brasse",
+  "100 brasse": "100 Brasse",
+  "200 brasse": "200 Brasse",
+  "50 papillon": "50 Pap",
+  "100 papillon": "100 Pap",
+  "200 papillon": "200 Pap",
+  "200 4 nages": "200 4N",
+  "400 4 nages": "400 4N",
 };
 
 // ============================================================================
@@ -78,19 +97,6 @@ const URL_QUALIFICATION_GRID = (season, competId = FRANCE_OPEN_ETE_ID) =>
 // ============================================================================
 // HELPERS
 // ============================================================================
-
-/**
- * Calcule la saison en cours (ex: en décembre 2024, c'est la saison 2025)
- * La saison FFN commence en septembre
- */
-function getCurrentSeason() {
-  const now = new Date();
-  const month = now.getMonth(); // 0-11
-  const year = now.getFullYear();
-  // Si on est entre janvier et août, on est dans la saison de l'année en cours
-  // Si on est entre septembre et décembre, on est dans la saison de l'année suivante
-  return month >= 8 ? year + 1 : year;
-}
 
 /**
  * Extrait l'année de naissance depuis le header de colonne
@@ -111,11 +117,11 @@ function parseAgeHeader(header) {
 }
 
 /**
- * Normalise le nom d'une épreuve
- * @param {string} event
+ * Normalise le nom d'une course
+ * @param {string} race
  */
-function normalizeEvent(event) {
-  return EVENT_ALIASES[event.trim()] || event.trim();
+function normalizeRace(race) {
+  return RACE_ALIASES[race.trim().toLowerCase()] || race.trim().toLowerCase();
 }
 
 // ============================================================================
@@ -135,7 +141,7 @@ export class QualificationScraper extends BaseScraper {
    * @param {number} [season] - Saison (ex: 2025)
    * @returns {Promise<QualificationGrid>}
    */
-  async getAll(season = getCurrentSeason()) {
+  async getAll(season = getDefaultSeason()) {
     const cacheKey = this.getCacheKey("qualification-grid", season);
 
     return this.getOrFetch(cacheKey, async () => {
@@ -178,10 +184,10 @@ export class QualificationScraper extends BaseScraper {
           
           if (cells.length === 0) return;
           
-          const eventName = $(cells[0]).text().trim();
-          if (!eventName || eventName === "Épreuves") return;
+          const raceName = $(cells[0]).text().trim();
+          if (!raceName || raceName === "Épreuves") return;
           
-          const normalizedEvent = normalizeEvent(eventName);
+          const normalizedRace = normalizeRace(raceName);
           
           // Chaque catégorie d'âge a 2 colonnes: Temps et Effectif
           let colIndex = 1;
@@ -194,7 +200,7 @@ export class QualificationScraper extends BaseScraper {
             
             if (time && time !== "" && !time.includes("Temps")) {
               const qual = {
-                event: normalizedEvent,
+                race: normalizedRace,
                 gender,
                 age: ageData.age,
                 birthYear: ageData.birthYear,
@@ -215,27 +221,27 @@ export class QualificationScraper extends BaseScraper {
 
       return {
         season: `${season - 1} / ${season}`,
-        competition: "France Open (été)",
+        event: DEFAULT_EVENT.name,
         qualifications,
       };
     });
   }
 
   /**
-   * Récupère le temps de qualification pour une épreuve et un âge donnés
+   * Récupère le temps de qualification pour une course et un âge donnés
    * @param {Object} params
-   * @param {string} params.event - Nom de l'épreuve (ex: "100 NL", "200 Dos")
+   * @param {string} params.race - Nom de la course (ex: "100 NL", "200 Dos")
    * @param {Gender} params.gender - "F" ou "M"
    * @param {number} params.age - Âge du nageur (14-19+)
    * @param {number} [params.birthYear] - Année de naissance (alternative à age)
    * @param {number} [params.season] - Saison
    * @returns {Promise<QualificationTime>}
    */
-  async getQualificationTime({ event, gender, age, birthYear, season }) {
+  async getQualificationTime({ race, gender, age, birthYear, season }) {
     const grid = await this.getAll(season);
     
-    // Normaliser l'épreuve
-    const normalizedEvent = normalizeEvent(event);
+    // Normaliser la course
+    const normalizedRace = normalizeRace(race);
     
     // Trouver la qualification correspondante
     let qualification;
@@ -244,7 +250,7 @@ export class QualificationScraper extends BaseScraper {
       // Recherche par année de naissance
       qualification = grid.qualifications.find(
         (q) =>
-          q.event.toLowerCase() === normalizedEvent.toLowerCase() &&
+          q.race.toLowerCase() === normalizedRace.toLowerCase() &&
           q.gender === gender &&
           q.birthYear === birthYear
       );
@@ -253,7 +259,7 @@ export class QualificationScraper extends BaseScraper {
       if (!qualification) {
         const oldest = grid.qualifications.find(
           (q) =>
-            q.event.toLowerCase() === normalizedEvent.toLowerCase() &&
+            q.race.toLowerCase() === normalizedRace.toLowerCase() &&
             q.gender === gender &&
             q.age >= 19
         );
@@ -266,7 +272,7 @@ export class QualificationScraper extends BaseScraper {
       const targetAge = Math.min(age, 19); // 19+ regroupé
       qualification = grid.qualifications.find(
         (q) =>
-          q.event.toLowerCase() === normalizedEvent.toLowerCase() &&
+          q.race.toLowerCase() === normalizedRace.toLowerCase() &&
           q.gender === gender &&
           (q.age === targetAge || (targetAge >= 19 && q.age >= 19))
       );
@@ -274,7 +280,7 @@ export class QualificationScraper extends BaseScraper {
     
     if (!qualification) {
       throw new NotFoundError(
-        `Temps de qualification pour ${event} (${gender}, ${age ? `${age} ans` : `né(e) en ${birthYear}`})`
+        `Temps de qualification pour ${race} (${gender}, ${age ? `${age} ans` : `né(e) en ${birthYear}`})`
       );
     }
     
@@ -326,14 +332,38 @@ export class QualificationScraper extends BaseScraper {
   }
 
   /**
-   * Liste toutes les épreuves disponibles
+   * Liste toutes les courses disponibles
    * @param {number} [season]
    * @returns {Promise<string[]>}
    */
-  async getEvents(season) {
+  async getRaces(season) {
     const grid = await this.getAll(season);
-    const events = [...new Set(grid.qualifications.map((q) => q.event))];
-    return events.sort();
+    const races = [...new Set(grid.qualifications.map((q) => q.race))];
+    return races.sort();
+  }
+
+  /**
+   * Retourne la liste des événements disponibles pour le scraping
+   * @returns {Array<{id: string, idclt: number, name: string}>}
+   */
+  getAvailableEvents() {
+    return AVAILABLE_EVENTS;
+  }
+
+  /**
+   * Retourne l'événement par défaut
+   * @returns {{id: string, idclt: number, name: string}}
+   */
+  getDefaultEvent() {
+    return DEFAULT_EVENT;
+  }
+
+  /**
+   * Retourne la saison par défaut (la plus récente)
+   * @returns {number}
+   */
+  getDefaultSeason() {
+    return getDefaultSeason();
   }
 }
 

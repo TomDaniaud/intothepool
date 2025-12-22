@@ -11,6 +11,7 @@ import { XIcon } from "lucide-react";
 import { AnalysisTab } from "@/components/competition/analysis-tab";
 import { EngagementTab } from "@/components/competition/engagement-tab";
 import { ResultTab } from "@/components/competition/result-tab";
+import { QualificationTab } from "@/components/competition/qualification-tab";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 
@@ -76,6 +77,7 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement, competI
                   <TabsTrigger value="engagement">Engagement</TabsTrigger>
                   <TabsTrigger value="resultat">Résultat</TabsTrigger>
                   <TabsTrigger value="analyse">Analyse</TabsTrigger>
+                  <TabsTrigger value="qualification">Qualification</TabsTrigger>
                 </TabsList>
               </div>
             </div>
@@ -97,6 +99,10 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement, competI
 
               <TabsContent value="analyse" className="min-h-0">
                 <AnalysisTab competId={competId} license={license} engagement={engagement} />
+              </TabsContent>
+
+              <TabsContent value="qualification" className="min-h-0">
+                <QualificationTab competId={competId} license={license} engagement={engagement} />
               </TabsContent>
             </div>
           </Tabs>

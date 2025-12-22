@@ -128,7 +128,7 @@ function SwimmerContainer({ competId, license }) {
       </div>
     );
   }
-
+console.log(swimmer)
   return <SwimmerPanel swimmer={swimmerData} />;
 }
 
