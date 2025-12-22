@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { useQualificationTime } from "@/hooks/useQualification";
 
 function QualificationSkeleton() {
   return (
@@ -81,7 +82,7 @@ function QualificationContent({ qualifications, currentRace }) {
       {qualifications.map((qual, index) => {
         const isHighlighted =
           normalizedCurrentRace &&
-          qual.race.toLowerCase().includes(normalizedCurrentRace.split(" ")[0]);
+          qual.race.toLowerCase().includes(normalizedCurrentRace);
         return (
           <QualificationRow
             key={`${qual.race}-${index}`}
@@ -94,35 +95,27 @@ function QualificationContent({ qualifications, currentRace }) {
   );
 }
 
-export function QualificationTab({ competId, license, engagement, swimmerInfo }) {
+export function QualificationTab({ competId, license, engagement }) {
   const [targetEvent, setTargetEvent] = useState("france-open-ete");
 
   // Récupérer la liste des événements disponibles
   const { data: events } = useFetchJson("/api/qualification?list=events");
 
   // Récupérer les infos du nageur si pas fournies
-  const swimmerUrl = !swimmerInfo && license && competId
+  const swimmerUrl = license && competId
     ? `/api/swimmer?competId=${competId}&license=${license}`
     : null;
   const { data: swimmerData } = useFetchJson(swimmerUrl);
+  const swimmer = Array.isArray(swimmerData) ? swimmerData[0] : swimmerData;
+  const birthYear = swimmer?.birthYear 
+  const gender = swimmer?.gender
 
-  // Utiliser swimmerInfo ou swimmerData
-  const swimmer = swimmerInfo || swimmerData?.[0];
-
-  // Déterminer le genre et l'année de naissance
-  // On va essayer de déduire le genre depuis le prénom ou l'utiliser s'il est fourni
-  const birthYear = swimmer?.birthYear || swimmer?.year;
-  const gender = swimmer?.gender || "M"; // Par défaut M si non fourni
-
-  // Construire l'URL de qualification
-  const qualParams = new URLSearchParams();
-  if (gender) qualParams.set("gender", gender);
-  if (birthYear) qualParams.set("birthYear", birthYear);
-
-  const qualUrl = birthYear
-    ? `/api/qualification?${qualParams.toString()}`
-    : null;
-  const { data: qualifications, error, isLoading } = useFetchJson(qualUrl);
+  const { data: qualifications, isLoading, error } = useQualificationTime({
+    gender,
+    birthYear,
+    // NOTE: le backend n'utilise pas encore `event`, mais on le passe pour rester cohérent avec le sélecteur.
+    event: targetEvent,
+  });
 
   if (!license) {
     return <EmptyState message="Aucun nageur sélectionné." />;

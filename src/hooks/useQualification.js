@@ -18,7 +18,7 @@ export function useQualificationTime({ race, gender, birthYear, season, event })
   if (event) params.append("event", event);
 
   // On ne fetch que si les paramètres nécessaires sont présents
-  const url = race && gender && birthYear
+  const url = gender && birthYear
     ? `/api/qualification?${params.toString()}`
     : null;
 

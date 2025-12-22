@@ -199,10 +199,11 @@ export function AnalysisTab({ competId, license, engagement }) {
   const swimmer = Array.isArray(swimmerData) ? swimmerData[0] : swimmerData;
 
   // Récupérer le temps de qualification pour cette course
-  const birthYear = swimmer?.birthYear;
-  const gender = swimmer?.gender || "M";
-  // Toujours appeler le hook, mais passer null si données manquantes
-  const { data: qualData } = useQualificationTime({ gender, birthYear, race: engagement.label });
+  const { data: qualData, isLoading: qualLoading } = useQualificationTime({ 
+    gender:swimmer?.gender, 
+    birthYear:swimmer?.birthYear, 
+    race: engagement?.label
+  });
   const qualificationTime = qualData?.time;
 
   if (!engagement) {
