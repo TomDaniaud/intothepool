@@ -94,7 +94,7 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement, competI
               </TabsContent>
 
               <TabsContent value="resultat" className="min-h-0">
-                <ResultTab competId={competId} engagement={engagement} />
+                <ResultTab competId={competId} raceId={engagement?.raceId} swimmerId={license} />
               </TabsContent>
 
               <TabsContent value="analyse" className="min-h-0">

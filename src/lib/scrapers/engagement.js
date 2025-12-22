@@ -13,6 +13,7 @@ const EngagementSchema = z.object({
   label: z.string().min(1),
   meta: z.string().optional(),
   date: z.string().optional(),
+  raceId: z.string().optional(), // ID de l'épreuve FFN pour les résultats
 });
 
 const GetEngagementsParamsSchema = z.object({
@@ -26,6 +27,9 @@ const GetEngagementsParamsSchema = z.object({
 
 const URL_FFN_SWIMMER_ENGAGEMENTS = (competId, swimmerId) =>
   `https://www.liveffn.com/cgi-bin/startlist.php?competition=${competId}&langue=fra&go=detail&action=participant&iuf=${swimmerId}`;
+
+const URL_FFN_RACE_LIST = (competId) =>
+  `https://www.liveffn.com/cgi-bin/resultats.php?competition=${competId}&langue=fra&go=epreuve`;
 
 // ============================================================================
 // HELPERS
@@ -98,6 +102,17 @@ function makeId(parts) {
     .replace(/[^a-zA-Z0-9:_-]+/g, "_");
 }
 
+/**
+ * Normalise le nom d'une épreuve pour comparaison (minuscules, sans espaces multiples)
+ * @param {string} raw
+ */
+function normalizeRaceName(raw) {
+  return normalizeWhitespace(raw)
+    .toLowerCase()
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
 // ============================================================================
 // SCRAPER
 // ============================================================================
@@ -105,6 +120,42 @@ function makeId(parts) {
 export class EngagementScraper extends BaseScraper {
   constructor(options = {}) {
     super(options);
+  }
+
+  /**
+   * Récupère le mapping nom d'épreuve → raceId pour une compétition
+   * @param {string} competId
+   * @returns {Promise<Map<string, string>>}
+   */
+  async getRaceIdMapping(competId) {
+    const cacheKey = this.getCacheKey("race-id-mapping", competId);
+
+    return this.getOrFetch(cacheKey, async () => {
+      const url = URL_FFN_RACE_LIST(competId);
+      const $ = await this.fetchCheerio(url);
+
+      /** @type {Map<string, string>} */
+      const mapping = new Map();
+
+      // Les épreuves sont dans des <option> avec value contenant "epreuve=XX"
+      $("select.epreuve option").each((_, el) => {
+        const $opt = $(el);
+        const href = $opt.attr("value") || "";
+        const label = normalizeWhitespace($opt.text());
+
+        if (!href || !label) return;
+
+        // Extraire epreuve=XX
+        const match = href.match(/epreuve=(\d+)/);
+        if (match) {
+          const raceId = match[1];
+          // Stocker avec le nom normalisé comme clé
+          mapping.set(normalizeRaceName(label), raceId);
+        }
+      });
+
+      return mapping;
+    });
   }
 
   /**
@@ -118,8 +169,12 @@ export class EngagementScraper extends BaseScraper {
     const cacheKey = this.getCacheKey("engagements", competId, swimmerId);
 
     return this.getOrFetch(cacheKey, async () => {
-      const url = URL_FFN_SWIMMER_ENGAGEMENTS(competId, swimmerId);
-      const $ = await this.fetchCheerio(url);
+      // Récupérer le mapping des épreuves en parallèle
+      const [raceIdMapping, $] = await Promise.all([
+        this.getRaceIdMapping(competId),
+        this.fetchCheerio(URL_FFN_SWIMMER_ENGAGEMENTS(competId, swimmerId)),
+      ]);
+
       this.checkCompetitionOpen($);
 
       const rows = $("tr.survol");
@@ -172,6 +227,9 @@ export class EngagementScraper extends BaseScraper {
         if (couloir) metaParts.push(couloir.replace(/\s+/g, " ").trim());
         if (chrono) metaParts.push(chrono);
 
+        // Chercher le raceId correspondant au nom de l'épreuve
+        const raceId = raceIdMapping.get(normalizeRaceName(rawRace)) || undefined;
+
         const race = {
           id: makeId(["race", competId, swimmerId, dateText, rawHoraire, label]),
           kind: "race",
@@ -179,6 +237,7 @@ export class EngagementScraper extends BaseScraper {
           label,
           date: dateText || undefined,
           meta: metaParts.length ? metaParts.join(" • ") : undefined,
+          raceId,
         };
 
         const validated = this.safeValidate(EngagementSchema, race);

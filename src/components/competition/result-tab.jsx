@@ -2,7 +2,7 @@
 
 /**
  * Onglet "Résultat" : classement de la course.
- * Reçoit competId et engagement en props.
+ * Reçoit competId, raceId et swimmerId en props.
  */
 
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
@@ -29,13 +29,20 @@ function ResultsListSkeleton() {
   );
 }
 
-function ResultsTable({ data }) {
+function ResultsTable({ data, swimmerId }) {
   if (!data?.results?.length) {
     return <EmptyState message="Aucun résultat disponible." />;
   }
 
   return (
     <div className="space-y-4">
+      {data.raceName && (
+        <div className="text-sm text-muted-foreground">
+          {data.raceName}
+          {data.raceDate && <span className="ml-2 text-xs">({data.raceDate})</span>}
+        </div>
+      )}
+
       <div className="overflow-hidden rounded-md border border-border">
         <table className="w-full text-sm">
           <thead>
@@ -44,75 +51,63 @@ function ResultsTable({ data }) {
               <th className="p-2 text-left font-medium">Nageur</th>
               <th className="p-2 text-left font-medium">Club</th>
               <th className="p-2 text-left font-medium">Temps</th>
-              <th className="p-2 text-right font-medium">Delta</th>
+              <th className="p-2 text-right font-medium">Points</th>
             </tr>
           </thead>
           <tbody>
-            {data.results.map((swimmer) => (
-              <tr
-                key={swimmer.rank}
-                className={cn(
-                  "border-b border-border last:border-b-0",
-                  swimmer.isSelected && "bg-accent text-accent-foreground"
-                )}
-              >
-                <td className="p-2 font-medium">{swimmer.rank}</td>
-                <td className="p-2">
-                  {swimmer.name}
-                  {swimmer.isSelected && <span className="ml-1 text-xs font-medium text-primary">★</span>}
-                </td>
-                <td className="p-2 text-muted-foreground">{swimmer.club}</td>
-                <td
+            {data.results.map((swimmer, idx) => {
+              const isSelected = swimmer.swimmerId === swimmerId;
+              return (
+                <tr
+                  key={swimmer.swimmerId || idx}
                   className={cn(
-                    "p-2 tabular-nums font-medium",
-                    swimmer.isPersonalBest && "text-green-600 dark:text-green-400"
+                    "border-b border-border last:border-b-0",
+                    isSelected && "bg-accent text-accent-foreground"
                   )}
                 >
-                  {swimmer.time}
-                  {swimmer.isPersonalBest && <span className="ml-1 text-xs">⚡RP</span>}
-                </td>
-                <td
-                  className={cn(
-                    "p-2 text-right tabular-nums text-xs",
-                    swimmer.delta?.startsWith("-")
-                      ? "text-green-600 dark:text-green-400"
-                      : "text-muted-foreground"
-                  )}
-                >
-                  {swimmer.delta}
-                </td>
-              </tr>
-            ))}
+                  <td className="p-2 font-medium">{swimmer.rank ?? "—"}</td>
+                  <td className="p-2">
+                    {swimmer.name}
+                    {swimmer.birthYear && (
+                      <span className="ml-1 text-xs text-muted-foreground">({swimmer.birthYear})</span>
+                    )}
+                    {isSelected && <span className="ml-1 text-xs font-medium text-primary">★</span>}
+                  </td>
+                  <td className="p-2 text-muted-foreground">{swimmer.club || "—"}</td>
+                  <td className="p-2 tabular-nums font-medium">
+                    {swimmer.time || "—"}
+                    {swimmer.remark && (
+                      <span className="ml-1 text-xs text-destructive">{swimmer.remark}</span>
+                    )}
+                  </td>
+                  <td className="p-2 text-right tabular-nums text-xs text-muted-foreground">
+                    {swimmer.points ? `${swimmer.points} pts` : "—"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
-      </div>
-
-      <div className="flex items-center gap-4 text-xs text-muted-foreground">
-        <div className="flex items-center gap-1">
-          <span className="text-green-600 dark:text-green-400">⚡RP</span>
-          <span>Record personnel battu</span>
-        </div>
       </div>
     </div>
   );
 }
 
-export function ResultTab({ competId, engagement }) {
+export function ResultTab({ competId, raceId, swimmerId }) {
   const params = new URLSearchParams();
   if (competId) params.set("competId", competId);
-  if (engagement?.label) params.set("race", engagement.label);
-  if (engagement?.id) params.set("engagementId", engagement.id);
-  if (engagement?.meta) params.set("meta", engagement.meta);
+  if (raceId) params.set("raceId", raceId);
+  // if (swimmerId) params.set("swimmerId", swimmerId);
 
-  const url = competId && engagement ? `/api/results?${params.toString()}` : null;
+  const url = competId && raceId ? `/api/results?${params.toString()}` : null;
   const { data, error, isLoading } = useFetchJson(url);
 
-  if (!engagement) {
+  if (!raceId) {
     return <p className="text-sm text-muted-foreground">Aucune épreuve sélectionnée.</p>;
   }
 
   if (isLoading) return <ResultsListSkeleton />;
   if (error) return <FetchError error={error} />;
 
-  return <ResultsTable data={data} />;
+  return <ResultsTable data={data} swimmerId={swimmerId} />;
 }
