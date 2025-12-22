@@ -16,6 +16,7 @@ import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { Separator } from "@/components/ui/separator";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
+import isMobile from "@/hooks/isMobile";
 
 function EngagementsPanelSkeleton() {
   return (
@@ -42,6 +43,7 @@ function EngagementsPanelSkeleton() {
 }
 
 function EngagementsPanel({ engagements, onSelect }) {
+  const isMob = isMobile();
   return (
     <section className="rounded-xl border border-border bg-card text-card-foreground">
       <div className="px-4 py-4">
@@ -105,12 +107,12 @@ function EngagementsPanel({ engagements, onSelect }) {
                       className={cn(
                         "group cursor-pointer transition-transform duration-200 hover:translate-x-2",
                         "min-w-0 w-full rounded-md px-2 py-1 text-left",
-                        "hover:bg-accent hover:text-accent-foreground",
-                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        "hover:text-accent-foreground",
+                        "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring",
                       )}
                       onClick={() => onSelect(engagement)}
                     >
-                      {engagement.time && (
+                      {isMob && engagement.time && (
                         <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">
                           {engagement.time}
                         </div>
@@ -126,7 +128,7 @@ function EngagementsPanel({ engagements, onSelect }) {
                     </button>
                   ) : (
                     <div className="min-w-0 rounded-md px-2 py-1">
-                      {engagement.time && (
+                      {isMob && engagement.time && (
                         <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">
                           {engagement.time}
                         </div>
