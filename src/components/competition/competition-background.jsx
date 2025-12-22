@@ -27,7 +27,7 @@ export function CompetitionBackground({ level }) {
   // Puis on ferme jusqu'en bas pour remplir toute la moitié basse.
   // const boundaryPath = "M 0 50 L 50 68 L 75 32 L 100 50 L 100 100 L 0 100 Z";
   const boundaryPath = isMobile() ? 
-          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 95 L 0 90 L 8 70 Z"
+          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 95 L 0 100 Z"
           :
           "M 0 20 L 33 50 L 66 20 L 100 50 L 100 100 L 0 100 Z";
 
