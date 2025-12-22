@@ -202,11 +202,7 @@ export function AnalysisTab({ competId, license, engagement }) {
   const birthYear = swimmer?.birthYear;
   const gender = swimmer?.gender || "M";
   // Toujours appeler le hook, mais passer null si données manquantes
-  const { data: qualData } = useQualificationTime(
-    birthYear && gender && engagement?.label
-      ? { gender, birthYear, race: engagement.label }
-      : { gender: null, birthYear: null, race: null }
-  );
+  const { data: qualData } = useQualificationTime({ gender, birthYear, race: engagement.label });
   const qualificationTime = qualData?.time;
 
   if (!engagement) {

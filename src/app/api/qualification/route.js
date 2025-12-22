@@ -29,9 +29,10 @@ export async function GET(request) {
 
     // Cas 0b: Valeurs par défaut
     if (list === "default") {
+      const defaultSeason = await scrapers.qualification.getDefaultSeason();
       return NextResponse.json({
         event: scrapers.qualification.getDefaultEvent(),
-        season: scrapers.qualification.getDefaultSeason(),
+        season: defaultSeason,
       });
     }
 
@@ -47,10 +48,10 @@ export async function GET(request) {
     }
 
     const birthYear = birthYearParam ? Number.parseInt(birthYearParam, 10) : undefined;
-    // Utiliser la saison par défaut si non fournie
+    // Utiliser la saison par défaut si non fournie (getDefaultSeason est async)
     const season = seasonParam 
       ? Number.parseInt(seasonParam, 10) 
-      : scrapers.qualification.getDefaultSeason();
+      : undefined; // Sera géré par le scraper qui utilise la dernière saison disponible
 
     const validation = QueryParamsSchema.safeParse({ race, gender, birthYear, season });
     if (!validation.success) {

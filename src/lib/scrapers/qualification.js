@@ -24,6 +24,7 @@ export const QualificationTimeSchema = z.object({
 
 export const QualificationGridSchema = z.object({
   season: z.string(),
+  seasonYear: z.number().int().optional(),
   event: z.string(),
   qualifications: z.array(QualificationTimeSchema),
 });
@@ -54,13 +55,9 @@ const AVAILABLE_EVENTS = [
 // Événement par défaut (premier de la liste)
 const DEFAULT_EVENT = AVAILABLE_EVENTS[0];
 
-// Saison par défaut (la plus récente)
-function getDefaultSeason() {
-  const now = new Date();
-  const month = now.getMonth();
-  const year = now.getFullYear();
-  return month >= 8 ? year + 1 : year;
-}
+// URL sans saison pour découvrir la dernière saison disponible
+const URL_QUALIFICATION_LATEST = (competId = FRANCE_OPEN_ETE_ID) =>
+  `https://ffn.extranat.fr/webffn/nat_perfs.php?idact=nat&go=clt_tps&idclt=${competId}`;
 
 // Mapping des courses (normalisation)
 const RACE_ALIASES = {
@@ -97,6 +94,23 @@ const URL_QUALIFICATION_GRID = (season, competId = FRANCE_OPEN_ETE_ID) =>
 // ============================================================================
 // HELPERS
 // ============================================================================
+
+/**
+ * Extrait la saison depuis le texte de la page
+ * Ex: "Saison : 2024 / 2025" -> { seasonLabel: "2024 / 2025", seasonYear: 2025 }
+ * @param {string} text
+ */
+function parseSeasonFromPage(text) {
+  // Chercher "Saison : XXXX / YYYY" ou "Saison: XXXX / YYYY"
+  const match = text.match(/Saison\s*:\s*(\d{4})\s*\/\s*(\d{4})/i);
+  if (match) {
+    return {
+      seasonLabel: `${match[1]} / ${match[2]}`,
+      seasonYear: Number.parseInt(match[2], 10),
+    };
+  }
+  return null;
+}
 
 /**
  * Extrait l'année de naissance depuis le header de colonne
@@ -138,56 +152,95 @@ export class QualificationScraper extends BaseScraper {
 
   /**
    * Récupère toutes les qualifications pour la saison en cours
-   * @param {number} [season] - Saison (ex: 2025)
+   * @param {number} [season] - Saison (ex: 2025). Si non spécifiée, récupère la dernière disponible
    * @returns {Promise<QualificationGrid>}
    */
-  async getAll(season = getDefaultSeason()) {
-    const cacheKey = this.getCacheKey("qualification-grid", season);
+  async getAll(season) {
+    // Si pas de saison spécifiée, on fait une requête sans paramètre pour obtenir la dernière
+    const url = season 
+      ? URL_QUALIFICATION_GRID(season) 
+      : URL_QUALIFICATION_LATEST();
+    
+    const cacheKey = this.getCacheKey("qualification-grid", season || "latest");
 
     return this.getOrFetch(cacheKey, async () => {
-      const $ = await this.fetchCheerio(URL_QUALIFICATION_GRID(season));
+      const $ = await this.fetchCheerio(url);
+
+      // Extraire la saison depuis la page
+      const pageText = $.text();
+      const parsedSeason = parseSeasonFromPage(pageText);
+      const seasonLabel = parsedSeason?.seasonLabel || "Saison inconnue";
+      const seasonYear = parsedSeason?.seasonYear || season;
 
       /** @type {QualificationTime[]} */
       const qualifications = [];
 
-      // La page contient 2 tableaux : Femmes puis Hommes
-      const tables = $("table");
+      // La page contient les données dans un ou plusieurs tableaux
+      // Les sections Femmes et Hommes sont séparées par une ligne d'en-tête répétée
+      const tables = $("table").filter((_, table) => {
+        const text = $(table).text();
+        return text.includes("Épreuves") && text.includes("ans");
+      });
       
-      /** @type {Gender[]} */
-      const genders = ["F", "M"];
-      
-      tables.each((tableIndex, table) => {
-        if (tableIndex >= 2) return; // On ne prend que les 2 premiers tableaux
-        
-        const gender = genders[tableIndex];
+      // Parser chaque tableau trouvé
+      tables.each((_, table) => {
         const $table = $(table);
         
-        // Récupérer les headers pour les catégories d'âge
-        /** @type {Array<{age: number, birthYear: number, isPlus: boolean}>} */
-        const ageColumns = [];
+        // Variables pour tracker la section courante
+        /** @type {Gender} */
+        let currentGender = "F"; // On commence par les femmes
+        let headerCount = 0; // Compte le nombre de fois qu'on voit les en-têtes de catégories
         
-        $table.find("tr").first().find("th, td").each((i, cell) => {
-          if (i === 0) return; // Skip "Épreuves"
-          const text = $(cell).text().trim();
-          const parsed = parseAgeHeader(text);
-          if (parsed) {
-            ageColumns.push(parsed);
-          }
-        });
-
-        // Parser chaque ligne d'épreuve
-        $table.find("tr").each((rowIndex, row) => {
-          if (rowIndex === 0) return; // Skip header
-          
+        // Récupérer les headers pour les catégories d'âge (une seule fois)
+        /** @type {Array<{age: number, birthYear: number, isPlus: boolean}>} */
+        let ageColumns = [];
+        
+        // Parser toutes les lignes du tableau
+        $table.find("tr").each((_, row) => {
           const $row = $(row);
-          const cells = $row.find("td");
+          const cells = $row.find("th, td");
           
-          if (cells.length === 0) return;
+          if (cells.length < 2) return;
           
-          const raceName = $(cells[0]).text().trim();
-          if (!raceName || raceName === "Épreuves") return;
+          const firstCellText = $(cells[0]).text().trim();
           
-          const normalizedRace = normalizeRace(raceName);
+          // Détecter une ligne d'en-tête de catégories d'âge
+          const hasAgeHeaders = $(row).text().includes("ans") && $(row).text().includes("(");
+          if (hasAgeHeaders && !firstCellText.match(/nage libre|dos|brasse|papillon|4 nages/i)) {
+            // C'est une ligne d'en-tête avec les catégories d'âge
+            headerCount++;
+            
+            // Si c'est la 2ème fois qu'on voit les en-têtes, on passe aux hommes
+            if (headerCount === 2) {
+              currentGender = "M";
+            }
+            
+            // Parser les catégories d'âge (refaire pour chaque section car les années peuvent différer)
+            const newAgeColumns = [];
+            cells.each((i, cell) => {
+              const text = $(cell).text().trim();
+              if (text.includes("ans") && text.includes("(")) {
+                const parsed = parseAgeHeader(text);
+                if (parsed) {
+                  newAgeColumns.push(parsed);
+                }
+              }
+            });
+            
+            if (newAgeColumns.length > 0) {
+              ageColumns = newAgeColumns;
+            }
+            return;
+          }
+          
+          // Vérifier que c'est bien une ligne d'épreuve (contient un nom de nage)
+          const isRaceLine = /nage libre|dos|brasse|papillon|4 nages/i.test(firstCellText);
+          if (!isRaceLine) return;
+          
+          // S'assurer qu'on a des colonnes d'âge
+          if (ageColumns.length === 0) return;
+          
+          const normalizedRace = normalizeRace(firstCellText);
           
           // Chaque catégorie d'âge a 2 colonnes: Temps et Effectif
           let colIndex = 1;
@@ -195,13 +248,18 @@ export class QualificationScraper extends BaseScraper {
             const timeCell = $(cells[colIndex]);
             const effectifCell = $(cells[colIndex + 1]);
             
-            const time = timeCell?.text()?.trim();
+            // Nettoyer le temps (supprimer espaces et caractères non imprimables)
+            const rawTime = timeCell?.text() || "";
+            const time = rawTime.replace(/\s+/g, "").trim();
             const effectif = Number.parseInt(effectifCell?.text()?.trim(), 10) || undefined;
             
-            if (time && time !== "" && !time.includes("Temps")) {
+            // Vérifier que le temps est au bon format (MM:SS.cc ou HH:MM:SS.cc)
+            const isValidTime = /^\d{2}:\d{2}\.\d{2}$/.test(time) || /^\d{2}:\d{2}:\d{2}\.\d{2}$/.test(time);
+            
+            if (time && isValidTime) {
               const qual = {
                 race: normalizedRace,
-                gender,
+                gender: currentGender,
                 age: ageData.age,
                 birthYear: ageData.birthYear,
                 time,
@@ -220,7 +278,8 @@ export class QualificationScraper extends BaseScraper {
       });
 
       return {
-        season: `${season - 1} / ${season}`,
+        season: seasonLabel,
+        seasonYear,
         event: DEFAULT_EVENT.name,
         qualifications,
       };
@@ -237,7 +296,7 @@ export class QualificationScraper extends BaseScraper {
    * @param {number} [params.season] - Saison
    * @returns {Promise<QualificationTime>}
    */
-  async getQualificationTime({ race, gender, age, birthYear, season }) {
+  async getQualificationTime({ race, gender, birthYear, season }) {
     const grid = await this.getAll(season);
     
     // Normaliser la course
@@ -247,13 +306,23 @@ export class QualificationScraper extends BaseScraper {
     let qualification;
     
     if (birthYear) {
-      // Recherche par année de naissance
+      // Recherche par année de naissance exacte
       qualification = grid.qualifications.find(
         (q) =>
           q.race.toLowerCase() === normalizedRace.toLowerCase() &&
           q.gender === gender &&
           q.birthYear === birthYear
       );
+      
+      // Si pas trouvé, essayer avec birthYear - 1 (décalage possible)
+      if (!qualification) {
+        qualification = grid.qualifications.find(
+          (q) =>
+            q.race.toLowerCase() === normalizedRace.toLowerCase() &&
+            q.gender === gender &&
+            q.birthYear === birthYear - 1
+        );
+      }
       
       // Si pas trouvé et birthYear <= plus vieille catégorie, prendre la catégorie 19+
       if (!qualification) {
@@ -267,20 +336,11 @@ export class QualificationScraper extends BaseScraper {
           qualification = oldest;
         }
       }
-    } else if (age) {
-      // Recherche par âge
-      const targetAge = Math.min(age, 19); // 19+ regroupé
-      qualification = grid.qualifications.find(
-        (q) =>
-          q.race.toLowerCase() === normalizedRace.toLowerCase() &&
-          q.gender === gender &&
-          (q.age === targetAge || (targetAge >= 19 && q.age >= 19))
-      );
     }
     
     if (!qualification) {
       throw new NotFoundError(
-        `Temps de qualification pour ${race} (${gender}, ${age ? `${age} ans` : `né(e) en ${birthYear}`})`
+        `Temps de qualification pour ${race} (${gender}, né(e) en ${birthYear})`
       );
     }
     
@@ -317,17 +377,7 @@ export class QualificationScraper extends BaseScraper {
           );
         }
       }
-    } else if (age) {
-      const targetAge = Math.min(age, 19);
-      results = grid.qualifications.filter(
-        (q) =>
-          q.gender === gender &&
-          (q.age === targetAge || (targetAge >= 19 && q.age >= 19))
-      );
-    } else {
-      results = [];
-    }
-    
+    } 
     return results;
   }
 
@@ -359,11 +409,18 @@ export class QualificationScraper extends BaseScraper {
   }
 
   /**
-   * Retourne la saison par défaut (la plus récente)
-   * @returns {number}
+   * Récupère la dernière saison disponible depuis le site
+   * @returns {Promise<number>}
    */
-  getDefaultSeason() {
-    return getDefaultSeason();
+  async getDefaultSeason() {
+    const cacheKey = this.getCacheKey("default-season");
+    
+    return this.getOrFetch(cacheKey, async () => {
+      const $ = await this.fetchCheerio(URL_QUALIFICATION_LATEST());
+      const pageText = $.text();
+      const parsed = parseSeasonFromPage(pageText);
+      return parsed?.seasonYear || new Date().getFullYear();
+    });
   }
 }
 
