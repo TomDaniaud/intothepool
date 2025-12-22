@@ -63,6 +63,9 @@ function EngagementsPanel({ engagements, onSelect }) {
             "& .MuiTimelineConnector-root": { backgroundColor: "var(--border)" },
             "& .MuiTimelineContent-root": { paddingTop: 0, paddingBottom: 0 },
             "& .MuiTimelineOppositeContent-root": {
+              // Sur mobile, on masque la colonne "heure" (sinon la timeline se décale)
+              display: { xs: "none", sm: "block" },
+              flex: { xs: 0, sm: 0 },
               paddingTop: 0,
               paddingBottom: 0,
               paddingLeft: 0,
@@ -107,6 +110,11 @@ function EngagementsPanel({ engagements, onSelect }) {
                       )}
                       onClick={() => onSelect(engagement)}
                     >
+                      {engagement.time && (
+                        <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">
+                          {engagement.time}
+                        </div>
+                      )}
                       <div className="truncate text-sm group-hover:underline underline-offset-2">
                         {engagement.label}
                       </div>
@@ -118,6 +126,11 @@ function EngagementsPanel({ engagements, onSelect }) {
                     </button>
                   ) : (
                     <div className="min-w-0 rounded-md px-2 py-1">
+                      {engagement.time && (
+                        <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">
+                          {engagement.time}
+                        </div>
+                      )}
                       <div className={cn("truncate text-sm font-semibold", isBreak && "font-medium")}>
                         {engagement.label}
                       </div>
@@ -170,8 +183,6 @@ export function EngagementsPanelContainer({ competId, swimmerId, onSelect }) {
       </section>
     );
   }
-
-  console.log(engagements);
 
   return <EngagementsPanel engagements={engagements} onSelect={onSelect} />;
 }
