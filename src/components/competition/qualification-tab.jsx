@@ -6,7 +6,7 @@
  */
 
 import { useState } from "react";
-import { Trophy } from "lucide-react";
+import { Trophy, ExternalLink } from "lucide-react";
 import { EmptyState, FetchError } from "@/components/ui/fetch-states";
 import { useFetchJson } from "@/hooks/useFetchJson";
 import { cn } from "@/lib/utils";
@@ -18,6 +18,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
+import { Button } from "@/components/ui/button";
 import { useQualificationTime } from "@/hooks/useQualification";
 
 function QualificationSkeleton() {
@@ -50,7 +51,10 @@ function QualificationRow({ qualification, isHighlighted }) {
         <div>
           <div className="text-sm font-medium">{qualification.race}</div>
           <div className="text-xs text-muted-foreground">
-            {qualification.age} ans ({qualification.birthYear})
+            {qualification.age?
+            <>{qualification.age} ans ({qualification.birthYear})</>:
+            <>Toute catégories</>
+        }
           </div>
         </div>
       </div>
@@ -96,10 +100,14 @@ function QualificationContent({ qualifications, currentRace }) {
 }
 
 export function QualificationTab({ competId, license, engagement }) {
-  const [targetEvent, setTargetEvent] = useState("france-open-ete");
+  // Stocker l'idclt de l'événement sélectionné (79 = OPEN d'été par défaut)
+  const [selectedIdclt, setSelectedIdclt] = useState(79);
 
   // Récupérer la liste des événements disponibles
   const { data: events } = useFetchJson("/api/qualification?list=events");
+  
+  // Trouver l'événement sélectionné pour avoir son URL
+  const selectedEvent = events?.find((evt) => evt.idclt === selectedIdclt);
 
   // Récupérer les infos du nageur si pas fournies
   const swimmerUrl = license && competId
@@ -107,14 +115,13 @@ export function QualificationTab({ competId, license, engagement }) {
     : null;
   const { data: swimmerData } = useFetchJson(swimmerUrl);
   const swimmer = Array.isArray(swimmerData) ? swimmerData[0] : swimmerData;
-  const birthYear = swimmer?.birthYear 
-  const gender = swimmer?.gender
+  const birthYear = swimmer?.birthYear;
+  const gender = swimmer?.gender;
 
   const { data: qualifications, isLoading, error } = useQualificationTime({
     gender,
     birthYear,
-    // NOTE: le backend n'utilise pas encore `event`, mais on le passe pour rester cohérent avec le sélecteur.
-    event: targetEvent,
+    idclt: selectedIdclt,
   });
 
   if (!license) {
@@ -126,21 +133,43 @@ export function QualificationTab({ competId, license, engagement }) {
       {/* Sélecteur d'événement cible */}
       <div className="space-y-2">
         <Label htmlFor="target-event">Événement cible</Label>
-        <Select value={targetEvent} onValueChange={setTargetEvent}>
-          <SelectTrigger id="target-event" className="w-full sm:w-64">
-            <SelectValue placeholder="Sélectionner un événement" />
-          </SelectTrigger>
-          <SelectContent>
-            {events?.map((evt) => (
-              <SelectItem key={evt.id} value={evt.id}>
-                {evt.name}
-              </SelectItem>
-            ))}
-            {!events?.length && (
-              <SelectItem value="france-open-ete">France Open (été)</SelectItem>
-            )}
-          </SelectContent>
-        </Select>
+        <div className="flex items-center gap-2">
+          <Select 
+            value={String(selectedIdclt)} 
+            onValueChange={(val) => setSelectedIdclt(Number(val))}
+          >
+            <SelectTrigger id="target-event" className="w-full sm:w-64">
+              <SelectValue placeholder="Sélectionner un événement" />
+            </SelectTrigger>
+            <SelectContent>
+              {events?.map((evt) => (
+                <SelectItem key={evt.idclt} value={String(evt.idclt)}>
+                  {evt.name}
+                </SelectItem>
+              ))}
+              {!events?.length && (
+                <SelectItem value="79">OPEN d'été</SelectItem>
+              )}
+            </SelectContent>
+          </Select>
+          {selectedEvent?.url && (
+            <Button
+              variant="outline"
+              size="icon"
+              asChild
+              className="shrink-0"
+            >
+              <a 
+                href={selectedEvent.url} 
+                target="_blank" 
+                rel="noopener noreferrer"
+                title="Voir la grille sur FFN"
+              >
+                <ExternalLink className="size-4" />
+              </a>
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Infos nageur */}

@@ -16,8 +16,8 @@ export const GenderSchema = z.enum(["F", "M"]);
 export const QualificationTimeSchema = z.object({
   race: z.string().min(1),
   gender: GenderSchema,
-  age: z.number().int().min(14).max(99),
-  birthYear: z.number().int(),
+  age: z.number().int().min(10).max(99).optional(), // Optionnel pour les événements sans tranches d'âge
+  birthYear: z.number().int().optional(), // Optionnel pour les événements sans tranches d'âge
   time: z.string().min(1), // Format "MM:SS.cc" ou "HH:MM:SS.cc"
   effectif: z.number().int().optional(),
 });
@@ -41,23 +41,16 @@ export const QualificationGridSchema = z.object({
 // CONSTANTES
 // ============================================================================
 
-// France Open d'été = idclt 79
-const FRANCE_OPEN_ETE_ID = 79;
+// Événement par défaut (OPEN d'été)
+const DEFAULT_EVENT_IDCLT = 79;
+const DEFAULT_EVENT_NAME = "OPEN d'été";
 
-// Événements disponibles pour le scraping de qualification
-const AVAILABLE_EVENTS = [
-  { id: "france-open-ete", idclt: 79, name: "France Open (été)" },
-  // Ajouter d'autres événements ici au fur et à mesure
-  // { id: "france-open-hiver", idclt: XX, name: "France Open (hiver)" },
-  // { id: "championnats-france", idclt: XX, name: "Championnats de France" },
-];
-
-// Événement par défaut (premier de la liste)
-const DEFAULT_EVENT = AVAILABLE_EVENTS[0];
+// URL de base pour découvrir les events et la saison
+const URL_QUALIFICATION_BASE = "https://ffn.extranat.fr/webffn/nat_perfs.php?idact=nat&go=clt_tps";
 
 // URL sans saison pour découvrir la dernière saison disponible
-const URL_QUALIFICATION_LATEST = (competId = FRANCE_OPEN_ETE_ID) =>
-  `https://ffn.extranat.fr/webffn/nat_perfs.php?idact=nat&go=clt_tps&idclt=${competId}`;
+const URL_QUALIFICATION_LATEST = (idclt = DEFAULT_EVENT_IDCLT) =>
+  `${URL_QUALIFICATION_BASE}&idclt=${idclt}`;
 
 // Mapping des courses (normalisation)
 const RACE_ALIASES = {
@@ -86,10 +79,10 @@ const RACE_ALIASES = {
 
 /**
  * @param {number} season - Année de la saison (ex: 2025 pour saison 2024/2025)
- * @param {number} [competId=79] - ID de la compétition (79 = France Open été)
+ * @param {number} [idclt=79] - ID de l'événement (79 = OPEN d'été)
  */
-const URL_QUALIFICATION_GRID = (season, competId = FRANCE_OPEN_ETE_ID) =>
-  `https://ffn.extranat.fr/webffn/nat_perfs.php?idact=nat&go=clt_tps&idsai=${season}&idclt=${competId}`;
+const URL_QUALIFICATION_GRID = (season, idclt = DEFAULT_EVENT_IDCLT) =>
+  `${URL_QUALIFICATION_BASE}&idsai=${season}&idclt=${idclt}`;
 
 // ============================================================================
 // HELPERS
@@ -151,17 +144,21 @@ export class QualificationScraper extends BaseScraper {
   }
 
   /**
-   * Récupère toutes les qualifications pour la saison en cours
-   * @param {number} [season] - Saison (ex: 2025). Si non spécifiée, récupère la dernière disponible
+   * Récupère toutes les qualifications pour la saison et l'événement donnés
+   * @param {Object} [params]
+   * @param {number} [params.season] - Saison (ex: 2025). Si non spécifiée, récupère la dernière disponible
+   * @param {number} [params.idclt] - ID de l'événement. Si non spécifié, utilise l'événement par défaut (OPEN d'été)
    * @returns {Promise<QualificationGrid>}
    */
-  async getAll(season) {
+  async getAll({ season, idclt } = {}) {
+    const eventIdclt = idclt ?? DEFAULT_EVENT_IDCLT;
+    
     // Si pas de saison spécifiée, on fait une requête sans paramètre pour obtenir la dernière
     const url = season 
-      ? URL_QUALIFICATION_GRID(season) 
-      : URL_QUALIFICATION_LATEST();
+      ? URL_QUALIFICATION_GRID(season, eventIdclt) 
+      : URL_QUALIFICATION_LATEST(eventIdclt);
     
-    const cacheKey = this.getCacheKey("qualification-grid", season || "latest");
+    const cacheKey = this.getCacheKey("qualification-grid", `${eventIdclt}-${season || "latest"}`);
 
     return this.getOrFetch(cacheKey, async () => {
       const $ = await this.fetchCheerio(url);
@@ -179,7 +176,8 @@ export class QualificationScraper extends BaseScraper {
       // Les sections Femmes et Hommes sont séparées par une ligne d'en-tête répétée
       const tables = $("table").filter((_, table) => {
         const text = $(table).text();
-        return text.includes("Épreuves") && text.includes("ans");
+        // Tableaux avec catégories d'âge OU tableaux "Toutes catégories"
+        return text.includes("Épreuves") && (text.includes("ans") || text.includes("Toutes catégories"));
       });
       
       // Parser chaque tableau trouvé
@@ -204,11 +202,13 @@ export class QualificationScraper extends BaseScraper {
           
           const firstCellText = $(cells[0]).text().trim();
           
-          // Détecter une ligne d'en-tête de catégories d'âge
+          // Détecter une ligne d'en-tête (catégories d'âge OU "Toutes catégories")
           const hasAgeHeaders = $(row).text().includes("ans") && $(row).text().includes("(");
-          if (hasAgeHeaders && !firstCellText.match(/nage libre|dos|brasse|papillon|4 nages/i)) {
-            // C'est une ligne d'en-tête avec les catégories d'âge
-            headerCount++;
+          const hasAllCategoriesHeader = firstCellText === "Épreuves" || $(row).text().includes("Toutes catégories");
+          
+          if ((hasAgeHeaders || hasAllCategoriesHeader) && !firstCellText.match(/nage libre|dos|brasse|papillon|4 nages/i)) {
+            // C'est une ligne d'en-tête
+            headerCount++;;
             
             // Si c'est la 2ème fois qu'on voit les en-têtes, on passe aux hommes
             if (headerCount === 2) {
@@ -237,31 +237,59 @@ export class QualificationScraper extends BaseScraper {
           const isRaceLine = /nage libre|dos|brasse|papillon|4 nages/i.test(firstCellText);
           if (!isRaceLine) return;
           
-          // S'assurer qu'on a des colonnes d'âge
-          if (ageColumns.length === 0) return;
-          
           const normalizedRace = normalizeRace(firstCellText);
           
-          // Chaque catégorie d'âge a 2 colonnes: Temps et Effectif
-          let colIndex = 1;
-          for (const ageData of ageColumns) {
-            const timeCell = $(cells[colIndex]);
-            const effectifCell = $(cells[colIndex + 1]);
+          // Cas 1: Tableau AVEC colonnes d'âge
+          if (ageColumns.length > 0) {
+            // Chaque catégorie d'âge a 2 colonnes: Temps et Effectif
+            let colIndex = 1;
+            for (const ageData of ageColumns) {
+              const timeCell = $(cells[colIndex]);
+              const effectifCell = $(cells[colIndex + 1]);
+              
+              // Nettoyer le temps (supprimer espaces et caractères non imprimables)
+              const rawTime = timeCell?.text() || "";
+              const time = rawTime.replace(/\s+/g, "").trim();
+              const effectif = Number.parseInt(effectifCell?.text()?.trim(), 10) || undefined;
+              
+              // Vérifier que le temps est au bon format (MM:SS.cc ou HH:MM:SS.cc)
+              const isValidTime = /^\d{2}:\d{2}\.\d{2}$/.test(time) || /^\d{2}:\d{2}:\d{2}\.\d{2}$/.test(time);
+              
+              if (time && isValidTime) {
+                const qual = {
+                  race: normalizedRace,
+                  gender: currentGender,
+                  age: ageData.age,
+                  birthYear: ageData.birthYear,
+                  time,
+                  effectif,
+                };
+                
+                const validated = this.safeValidate(QualificationTimeSchema, qual);
+                if (validated) {
+                  qualifications.push(validated);
+                }
+              }
+              
+              colIndex += 2;
+            }
+          } else {
+            // Cas 2: Tableau SANS colonnes d'âge (ex: Championnats de France Elite)
+            // Structure: Épreuve | Temps | Effectif
+            const timeCell = $(cells[1]);
+            const effectifCell = $(cells[2]);
             
-            // Nettoyer le temps (supprimer espaces et caractères non imprimables)
             const rawTime = timeCell?.text() || "";
             const time = rawTime.replace(/\s+/g, "").trim();
             const effectif = Number.parseInt(effectifCell?.text()?.trim(), 10) || undefined;
             
-            // Vérifier que le temps est au bon format (MM:SS.cc ou HH:MM:SS.cc)
             const isValidTime = /^\d{2}:\d{2}\.\d{2}$/.test(time) || /^\d{2}:\d{2}:\d{2}\.\d{2}$/.test(time);
             
             if (time && isValidTime) {
               const qual = {
                 race: normalizedRace,
                 gender: currentGender,
-                age: ageData.age,
-                birthYear: ageData.birthYear,
+                // Pas d'âge ni birthYear pour cet événement
                 time,
                 effectif,
               };
@@ -271,16 +299,19 @@ export class QualificationScraper extends BaseScraper {
                 qualifications.push(validated);
               }
             }
-            
-            colIndex += 2;
           }
         });
       });
 
+      // Trouver le nom de l'événement depuis la page (option selected)
+      const selectedOption = $("select[name='idclt'] option[selected]").text().trim();
+      const eventName = selectedOption || DEFAULT_EVENT_NAME;
+
       return {
         season: seasonLabel,
         seasonYear,
-        event: DEFAULT_EVENT.name,
+        event: eventName,
+        idclt: eventIdclt,
         qualifications,
       };
     });
@@ -294,10 +325,11 @@ export class QualificationScraper extends BaseScraper {
    * @param {number} params.age - Âge du nageur (14-19+)
    * @param {number} [params.birthYear] - Année de naissance (alternative à age)
    * @param {number} [params.season] - Saison
+   * @param {number} [params.idclt] - ID de l'événement
    * @returns {Promise<QualificationTime>}
    */
-  async getQualificationTime({ race, gender, birthYear, season }) {
-    const grid = await this.getAll(season);
+  async getQualificationTime({ race, gender, birthYear, season, idclt }) {
+    const grid = await this.getAll({ season, idclt });
     
     // Normaliser la course
     const normalizedRace = normalizeRace(race);
@@ -305,7 +337,17 @@ export class QualificationScraper extends BaseScraper {
     // Trouver la qualification correspondante
     let qualification;
     
-    if (birthYear) {
+    // D'abord, vérifier si cet événement a des tranches d'âge
+    const hasAgeCategories = grid.qualifications.some((q) => q.birthYear != null);
+    
+    if (!hasAgeCategories) {
+      // Événement sans tranches d'âge: juste matcher race + gender
+      qualification = grid.qualifications.find(
+        (q) =>
+          q.race.toLowerCase() === normalizedRace.toLowerCase() &&
+          q.gender === gender
+      );
+    } else if (birthYear) {
       // Recherche par année de naissance exacte
       qualification = grid.qualifications.find(
         (q) =>
@@ -332,7 +374,7 @@ export class QualificationScraper extends BaseScraper {
             q.gender === gender &&
             q.age >= 19
         );
-        if (oldest && birthYear <= oldest.birthYear) {
+        if (oldest && oldest.birthYear && birthYear <= oldest.birthYear) {
           qualification = oldest;
         }
       }
@@ -340,7 +382,7 @@ export class QualificationScraper extends BaseScraper {
     
     if (!qualification) {
       throw new NotFoundError(
-        `Temps de qualification pour ${race} (${gender}, né(e) en ${birthYear})`
+        `Temps de qualification pour ${race} (${gender}${birthYear ? `, né(e) en ${birthYear}` : ""})`
       );
     }
     
@@ -351,15 +393,23 @@ export class QualificationScraper extends BaseScraper {
    * Récupère toutes les qualifications pour un âge/année de naissance donné
    * @param {Object} params
    * @param {Gender} params.gender - "F" ou "M"
-   * @param {number} [params.age] - Âge du nageur
    * @param {number} [params.birthYear] - Année de naissance
    * @param {number} [params.season] - Saison
+   * @param {number} [params.idclt] - ID de l'événement
    * @returns {Promise<QualificationTime[]>}
    */
-  async getQualificationsForAge({ gender, age, birthYear, season }) {
-    const grid = await this.getAll(season);
+  async getQualificationsForAge({ gender, birthYear, season, idclt }) {
+    const grid = await this.getAll({ season, idclt });
     
-    let results;
+    // D'abord, vérifier si cet événement a des tranches d'âge
+    const hasAgeCategories = grid.qualifications.some((q) => q.birthYear != null);
+    
+    // Événement sans tranches d'âge: retourner toutes les qualifs pour ce genre
+    if (!hasAgeCategories) {
+      return grid.qualifications.filter((q) => q.gender === gender);
+    }
+    
+    let results = [];
     
     if (birthYear) {
       results = grid.qualifications.filter(
@@ -371,55 +421,72 @@ export class QualificationScraper extends BaseScraper {
         const oldest = grid.qualifications.find(
           (q) => q.gender === gender && q.age >= 19
         );
-        if (oldest && birthYear <= oldest.birthYear) {
+        if (oldest && oldest.birthYear && birthYear <= oldest.birthYear) {
           results = grid.qualifications.filter(
             (q) => q.gender === gender && q.age >= 19
           );
         }
       }
-    } 
+    }
+    
     return results;
   }
 
   /**
    * Liste toutes les courses disponibles
-   * @param {number} [season]
+   * @param {Object} [params]
+   * @param {number} [params.season]
+   * @param {number} [params.idclt]
    * @returns {Promise<string[]>}
    */
-  async getRaces(season) {
-    const grid = await this.getAll(season);
+  async getRaces({ season, idclt } = {}) {
+    const grid = await this.getAll({ season, idclt });
     const races = [...new Set(grid.qualifications.map((q) => q.race))];
     return races.sort();
   }
 
   /**
-   * Retourne la liste des événements disponibles pour le scraping
-   * @returns {Array<{id: string, idclt: number, name: string}>}
+   * Fetch et retourne la liste des événements disponibles depuis le site FFN
+   * @returns {Promise<Array<{id: string, idclt: number, name: string, url: string}>>}
    */
-  getAvailableEvents() {
-    return AVAILABLE_EVENTS;
-  }
-
-  /**
-   * Retourne l'événement par défaut
-   * @returns {{id: string, idclt: number, name: string}}
-   */
-  getDefaultEvent() {
-    return DEFAULT_EVENT;
-  }
-
-  /**
-   * Récupère la dernière saison disponible depuis le site
-   * @returns {Promise<number>}
-   */
-  async getDefaultSeason() {
-    const cacheKey = this.getCacheKey("default-season");
+  async getAvailableEvents() {
+    const cacheKey = this.getCacheKey("available-events");
     
     return this.getOrFetch(cacheKey, async () => {
-      const $ = await this.fetchCheerio(URL_QUALIFICATION_LATEST());
-      const pageText = $.text();
-      const parsed = parseSeasonFromPage(pageText);
-      return parsed?.seasonYear || new Date().getFullYear();
+      const $ = await this.fetchCheerio(URL_QUALIFICATION_BASE);
+      
+      /** @type {Array<{id: string, idclt: number, name: string, url: string}>} */
+      const events = [];
+      
+      // Parser le <select name="idclt">
+      $("select[name='idclt'] option").each((_, option) => {
+        const $option = $(option);
+        const value = $option.attr("value") || "";
+        const name = $option.text().trim();
+        
+        // Ignorer l'option "---" (pas de idclt)
+        if (!name || name === "---") return;
+        
+        // Extraire idclt depuis l'URL: "nat_perfs.php?idact=nat&go=clt_tps&idsai=2025&idclt=78"
+        const idcltMatch = value.match(/idclt=(\d+)/);
+        if (!idcltMatch) return;
+        
+        const idclt = Number.parseInt(idcltMatch[1], 10);
+        // Créer un id slug à partir du nom
+        const id = name
+          .toLowerCase()
+          .normalize("NFD")
+          .replace(/[\u0300-\u036f]/g, "") // Supprimer accents
+          .replace(/[^a-z0-9]+/g, "-") // Remplacer caractères spéciaux par -
+          .replace(/^-|-$/g, ""); // Supprimer - au début/fin
+        
+        // Construire l'URL complète vers la grille extranat
+        const url = `https://ffn.extranat.fr/webffn/${value}`;
+        
+        events.push({ id, idclt, name, url });
+      });
+      
+      return events;
     });
   }
 }
