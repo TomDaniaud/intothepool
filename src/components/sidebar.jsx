@@ -3,6 +3,7 @@
 import { PanelLeft, Plus, Trash2 } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { useSearchHistory } from "@/components/search-history-provider";
 import { Button } from "@/components/ui/button";
@@ -16,6 +17,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { capitalize, cn } from "@/lib/utils";
+import isMobile from "@/hooks/isMobile";
 
 function formatRelativeTime(createdAt) {
   if (!createdAt || Number.isNaN(createdAt)) return "";
@@ -50,10 +52,17 @@ function formatRelativeTime(createdAt) {
   return rtf.format(value, unit);
 }
 
-function SidebarBody() {
+function SidebarBody({ onMobileAction } = {}) {
   const { items, activeId, removeSearch, setActiveId } = useSearchHistory();
   const router = useRouter();
   const pathname = usePathname();
+  const isMobileViewport = isMobile();
+
+  function closeIfMobile() {
+    if (isMobileViewport && typeof onMobileAction === "function") {
+      onMobileAction();
+    }
+  }
 
   // L'item actif est celui sélectionné par l'utilisateur, ou le dernier ajouté.
   const value = activeId || items[0]?.id || "";
@@ -73,6 +82,7 @@ function SidebarBody() {
     if (selectedItem.clubId) params.set("clubId", selectedItem.clubId);
 
     router.push(`/competition?${params.toString()}`);
+    closeIfMobile();
   }
 
   function handleRemoveTab(id) {
@@ -91,6 +101,8 @@ function SidebarBody() {
         router.push("/");
       }
     }
+
+    closeIfMobile();
   }
 
   return (
@@ -113,7 +125,7 @@ function SidebarBody() {
             variant="ghost"
             className="h-auto w-full justify-start gap-2 rounded-md px-3 py-2"
           >
-            <Link href="/">
+            <Link href="/" onClick={() => closeIfMobile()}>
               <Plus className="size-4 shrink-0" />
               <span className="truncate">Nouvelle recherche</span>
             </Link>
@@ -212,8 +224,10 @@ export function Sidebar() {
  * Sidebar mobile (Sheet) : le trigger est fourni par le parent (ex: header).
  */
 export function MobileSidebarTrigger() {
+  const [open, setOpen] = useState(false);
+
   return (
-    <Sheet>
+    <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
         <Button variant="outline" size="icon" aria-label="Ouvrir l'historique">
           <PanelLeft className="size-4" />
@@ -223,7 +237,7 @@ export function MobileSidebarTrigger() {
         <SheetHeader className="sr-only">
           <SheetTitle>Historique</SheetTitle>
         </SheetHeader>
-        <SidebarBody />
+        <SidebarBody onMobileAction={() => setOpen(false)} />
       </SheetContent>
     </Sheet>
   );

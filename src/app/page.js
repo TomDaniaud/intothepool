@@ -226,7 +226,7 @@ export default function Home() {
             </div>
 
             {/* Compétition: soit input filtre, soit card sélectionnée */}
-            <div className="space-y-2">
+            <div className="space-y-2 w-full min-w-0">
               <Label htmlFor="competFilter">Compétition</Label>
               {selectedCompetition ? (
                 <CompetCardSelected
