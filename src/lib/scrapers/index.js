@@ -22,6 +22,7 @@ export { SwimmerScraper, swimmerScraper, SwimmerSchema } from "./swimmer";
 export { SeriesScraper, seriesScraper, SeriesSchema, SeriesParamsSchema } from "./series";
 export { CompetitionScraper, competitionScraper, CompetitionSchema, LevelSchema } from "./competition";
 export { QualificationScraper, qualificationScraper, QualificationTimeSchema, QualificationGridSchema, GenderSchema } from "./qualification";
+export { ResultsScraper, resultsScraper, RaceResultEntrySchema, RaceResultsSchema } from "./results";
 
 // ============================================================================
 // FACTORY POUR CRÉER DES SCRAPERS CONFIGURÉS
@@ -32,6 +33,7 @@ import { SwimmerScraper } from "./swimmer";
 import { SeriesScraper } from "./series";
 import { CompetitionScraper } from "./competition";
 import { QualificationScraper } from "./qualification";
+import { ResultsScraper } from "./results";
 
 /**
  * @typedef {Object} ScraperOptions
@@ -42,7 +44,7 @@ import { QualificationScraper } from "./qualification";
 /**
  * Crée un ensemble de scrapers connectés entre eux
  * @param {ScraperOptions} [options]
- * @returns {{club: ClubScraper, swimmer: SwimmerScraper, series: SeriesScraper, competition: CompetitionScraper}}
+ * @returns {{club: ClubScraper, swimmer: SwimmerScraper, series: SeriesScraper, competition: CompetitionScraper, qualification: QualificationScraper, results: ResultsScraper}}
  */
 export function createScrapers(options = {}) {
   const club = new ClubScraper(options);
@@ -50,11 +52,12 @@ export function createScrapers(options = {}) {
   const series = new SeriesScraper(options);
   const competition = new CompetitionScraper(options);
   const qualification = new QualificationScraper(options);
+  const results = new ResultsScraper(options);
 
   // Connecter les dépendances
   swimmer.registerDependency("club", club);
 
-  return { club, swimmer, series, competition, qualification };
+  return { club, swimmer, series, competition, qualification, results };
 }
 
 // ============================================================================
