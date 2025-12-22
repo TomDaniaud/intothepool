@@ -1,27 +1,16 @@
 "use client";
 
+import isMobile from "@/hooks/isMobile";
 import { motion } from "framer-motion";
 
 /**
  * Couleurs associées à chaque level de compétition.
  */
 const LEVEL_COLORS = {
-  NATIONAL: {
-    from: "var(--color-cyan-600)",
-    to: "var(--color-blue-400)",
-  },
-  REGIONAL: {
-    from: "var(--color-amber-600)",
-    to: "var(--color-amber-400)",
-  },
-  DEPARTEMENTAL: {
-    from: "var(--color-emerald-600)",
-    to: "var(--color-emerald-400)",
-  },
-  INTERNATIONAL: {
-    from: "var(--color-purple-600)",
-    to: "var(--color-purple-400)",
-  },
+  NATIONAL: "var(--color-red-400)",
+  REGIONAL:  "var(--color-purple-400)",
+  DEPARTEMENTAL: "var(--color-emerald-400)",
+  INTERNATIONAL: "var(--color-amber-400)",
 };
 
 /**
@@ -37,7 +26,10 @@ export function CompetitionBackground({ level }) {
   // gauche (50%) → creux (plus bas) → bosse (plus haut) → droite (50%)
   // Puis on ferme jusqu'en bas pour remplir toute la moitié basse.
   // const boundaryPath = "M 0 50 L 50 68 L 75 32 L 100 50 L 100 100 L 0 100 Z";
-  const boundaryPath = "M 0 20 L 33 50 L 66 20 L 100 50 L 100 100 L 0 100 Z";
+  const boundaryPath = isMobile() ? 
+          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 95 L 0 90 L 8 70 Z"
+          :
+          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 100 L 0 100 Z";
 
   return (
     <motion.div
@@ -60,8 +52,8 @@ export function CompetitionBackground({ level }) {
       >
         <defs>
           <linearGradient id="competition-bg" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor={colors.from} />
-            <stop offset="100%" stopColor={colors.to} />
+            <stop offset="0%" stopColor={colors} />
+            <stop offset="100%" stopColor={colors} />
           </linearGradient>
         </defs>
         <path d={boundaryPath} fill="url(#competition-bg)" />
