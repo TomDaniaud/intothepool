@@ -55,14 +55,28 @@ function CompetitionPageContent() {
     setDetailsOpen(true);
   }
 
-  // URL de partage = URL actuelle
+  // Partage natif si possible, sinon copie l'URL
   async function handleShare() {
-    try {
-      await navigator.clipboard.writeText(window.location.href);
-      setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      console.error("Impossible de copier l'URL");
+    const shareData = {
+      title: document.title || "Compétition FFN",
+      text: "Consulte cette compétition sur IntoThePool :",
+      url: window.location.href,
+    };
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // L'utilisateur a annulé ou erreur
+        console.log("Partage annulé ou erreur", err);
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(window.location.href);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 2000);
+      } catch {
+        console.error("Impossible de copier l'URL");
+      }
     }
   }
 

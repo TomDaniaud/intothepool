@@ -93,6 +93,40 @@ const URL_FFN_SERIES = (competId, params) => {
 };
 
 // ============================================================================
+// HELPERS
+// ============================================================================
+
+/**
+ * Déduplique un texte répété (ex: "MARNE MARNE" -> "MARNE", "ABCABC" -> "ABC")
+ * @param {string} text
+ * @returns {string}
+ */
+function dedupeText(text) {
+  if (!text) return text;
+  const s = text.trim();
+  const n = s.length;
+
+  // Cas: moitié exacte répétée ("ABCABC")
+  if (n % 2 === 0) {
+    const half = s.slice(0, n / 2);
+    if (half === s.slice(n / 2)) return half;
+  }
+
+  // Cas: tokens répétés ("MARNE MARNE" ou "A B A B")
+  const tokens = s.split(/\s+/);
+  const tlen = tokens.length;
+  if (tlen >= 2 && tlen % 2 === 0) {
+    const half = tokens.slice(0, tlen / 2);
+    const other = tokens.slice(tlen / 2);
+    if (half.join(" ").toLowerCase() === other.join(" ").toLowerCase()) {
+      return half.join(" ");
+    }
+  }
+
+  return s;
+}
+
+// ============================================================================
 // SERIES SCRAPER
 // ============================================================================
 
@@ -255,11 +289,7 @@ export class SeriesScraper extends BaseScraper {
               name: $(tds[1]).text().trim(),
               year: $(tds[2]).text().trim(),
               nationality: $(tds[3]).text().trim(),
-              club: $(tds[4])
-                .find(".tooltip")
-                .text()
-                .trim()
-                .replace(/\s+/g, " "),
+              club: $(tds[4]).find("nobr").first().text().trim().replace(/\s+/g, " "),
               lastChrono: chrono.includes("AT") ? "AT" : chrono,
             };
 
