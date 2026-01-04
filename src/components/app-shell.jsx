@@ -30,7 +30,7 @@ export function AppShell({ children }) {
           <Sidebar />
 
           <div className="flex min-w-0 flex-1 flex-col">
-            <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-background/60 backdrop-blur-md">
+            <header className="sticky top-0 z-40 shrink-0 border-b border-border bg-background/40 backdrop-blur-md">
             <div className="flex h-14 items-center gap-3 px-4">
               <div className="md:hidden max-md:mr-4">
                 <MobileSidebarTrigger />

@@ -91,7 +91,7 @@ function EngagementsPanel({ engagements, onSelect }) {
 
             return (
               <TimelineItem key={engagement.id}>
-                <TimelineOppositeContent>{engagement.time || ""}</TimelineOppositeContent>
+                <TimelineOppositeContent>{isRace && engagement.time || "_____"}</TimelineOppositeContent>
                 <TimelineSeparator>
                   <TimelineDot
                     variant={isBreak ? "outlined" : "filled"}
@@ -128,11 +128,6 @@ function EngagementsPanel({ engagements, onSelect }) {
                     </button>
                   ) : (
                     <div className="min-w-0 rounded-md px-2 py-1">
-                      {isMob && engagement.time && (
-                        <div className="mb-0.5 text-xs text-muted-foreground sm:hidden">
-                          {engagement.time}
-                        </div>
-                      )}
                       <div className={cn("truncate text-sm font-semibold", isBreak && "font-medium")}>
                         {engagement.label}
                       </div>

@@ -214,7 +214,7 @@ function SidebarBody({ onMobileAction } = {}) {
  */
 export function Sidebar() {
   return (
-    <aside className="hidden h-screen w-1/5 shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-md text-sidebar-foreground md:flex">
+    <aside className="hidden h-screen w-1/5 shrink-0 border-r border-border bg-sidebar/40 backdrop-blur-md text-sidebar-foreground md:flex">
       <SidebarBody />
     </aside>
   );
