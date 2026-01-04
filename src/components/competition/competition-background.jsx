@@ -1,6 +1,4 @@
 "use client";
-
-import isMobile from "@/hooks/isMobile";
 import { motion } from "framer-motion";
 
 /**
@@ -22,42 +20,31 @@ const LEVEL_COLORS = {
  */
 export function CompetitionBackground({ level }) {
   const colors = LEVEL_COLORS[level] || LEVEL_COLORS.DEPARTEMENTAL;
-  // 1 période sur la démarcation à mi-hauteur:
-  // gauche (50%) → creux (plus bas) → bosse (plus haut) → droite (50%)
-  // Puis on ferme jusqu'en bas pour remplir toute la moitié basse.
-  // const boundaryPath = "M 0 50 L 50 68 L 75 32 L 100 50 L 100 100 L 0 100 Z";
-  const boundaryPath = isMobile() ? 
-          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 95 L 0 90 L 8 70 Z"
-          :
-          "M 0 20 L 33 50 L 66 20 L 100 50 L 100 100 L 0 100 Z";
-
   return (
-    <motion.div
-      className="pointer-events-none absolute inset-0 z-0 overflow-hidden"
-      initial={{ y: "100%" }}
-      animate={{ y: 0 }}
-      transition={{
-        type: "spring",
-        stiffness: 50,
-        damping: 20,
-        duration: 1.8,
-      }}
-    >
-      {/* Zone colorée: moitié basse + démarcation 1 période */}
-      <svg
-        className="absolute inset-0 h-full w-full"
-        viewBox="0 0 100 100"
-        preserveAspectRatio="none"
+      <motion.div
+        initial={{ scale: 0.4, opacity: 0 }}
+        animate={{ scale: 2, opacity: 0.5 }}
+        transition={{ duration: 3.2, delay: 0.2, type: "spring", stiffness: 40 }}
+        style={{
+          position: "absolute",
+          left: "50%",
+          bottom: 0,
+          // transform: "translateX(-50%)",
+          width: "80vw",
+          height: "40vh",
+          pointerEvents: "none",
+          zIndex: 1,
+        }}
         aria-hidden="true"
       >
-        <defs>
-          <linearGradient id="competition-bg" x1="0" y1="1" x2="0" y2="0">
-            <stop offset="0%" stopColor={colors} />
-            <stop offset="100%" stopColor={colors} />
-          </linearGradient>
-        </defs>
-        <path d={boundaryPath} fill="url(#competition-bg)" />
-      </svg>
-    </motion.div>
+        {/* <div
+          style={{
+            width: "80%",
+            height: "80%",
+            background: `radial-gradient(ellipse at bottom center, ${colors} 0%, transparent 70%)`,
+            opacity: 1,
+          }}
+        /> */}
+      </motion.div>
   );
 }

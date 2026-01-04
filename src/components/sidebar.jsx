@@ -229,7 +229,7 @@ export function MobileSidebarTrigger() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Ouvrir l'historique">
+        <Button variant="outline" size="icon" aria-label="Ouvrir l'historique" className="bg-card/50">
           <PanelLeft className="size-4" />
         </Button>
       </SheetTrigger>

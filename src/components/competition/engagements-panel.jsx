@@ -45,7 +45,7 @@ function EngagementsPanelSkeleton() {
 function EngagementsPanel({ engagements, onSelect }) {
   const isMob = isMobile();
   return (
-    <section className="rounded-xl border border-border bg-card text-card-foreground">
+    <section className="rounded-xl border border-border bg-card/70 backdrop-blur text-card-foreground">
       <div className="px-4 py-4">
         <div className="text-sm font-semibold">Engagements</div>
         <div className="text-sm text-muted-foreground">
@@ -62,7 +62,7 @@ function EngagementsPanel({ engagements, onSelect }) {
             m: 0,
             "& .MuiTimelineItem-root:before": { flex: 0, padding: 0 },
             "& .MuiTimelineDot-root": { boxShadow: "none", borderColor: "var(--border)" },
-            "& .MuiTimelineConnector-root": { backgroundColor: "var(--border)" },
+            "& .MuiTimelineConnector-root": { backgroundColor: "rgba(0,0,0,0.12)" },
             "& .MuiTimelineContent-root": { paddingTop: 0, paddingBottom: 0 },
             "& .MuiTimelineOppositeContent-root": {
               // Sur mobile, on masque la colonne "heure" (sinon la timeline se décale)

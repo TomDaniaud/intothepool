@@ -12,7 +12,7 @@ import { capitalize } from "@/lib/utils";
 
 function SwimmerPanelSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+    <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
       <div className="h-4 w-16 animate-pulse rounded bg-muted" />
       <Separator className="my-3" />
       <div className="space-y-3">
@@ -29,7 +29,7 @@ function SwimmerPanelSkeleton() {
 
 function ClubPanelSkeleton() {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+    <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
       <div className="h-4 w-12 animate-pulse rounded bg-muted" />
       <Separator className="my-3" />
       <div className="space-y-3">
@@ -46,7 +46,7 @@ function ClubPanelSkeleton() {
 
 function SwimmerPanel({ swimmer }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+    <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
       <div className="text-sm font-semibold">Nageur</div>
       <Separator className="my-3" />
       <dl className="grid gap-2 text-sm">
@@ -73,7 +73,7 @@ function SwimmerPanel({ swimmer }) {
 
 function ClubPanel({ club }) {
   return (
-    <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+    <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
       <div className="text-sm font-semibold">{capitalize(club.type)}</div>
       <Separator className="my-3" />
       <dl className="grid gap-2 text-sm">
@@ -103,7 +103,7 @@ function SwimmerContainer({ competId, license }) {
 
   if (!license) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <EmptyState message="Aucun nageur sélectionné." />
       </div>
     );
@@ -113,7 +113,7 @@ function SwimmerContainer({ competId, license }) {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <FetchError error={error} />
       </div>
     );
@@ -123,7 +123,7 @@ function SwimmerContainer({ competId, license }) {
 
   if (!swimmerData) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <EmptyState message="Aucun nageur trouvé." />
       </div>
     );
@@ -141,7 +141,7 @@ function ClubContainer({ competId, clubCode }) {
 
   if (!clubCode) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <EmptyState message="Aucun club sélectionné." />
       </div>
     );
@@ -151,7 +151,7 @@ function ClubContainer({ competId, clubCode }) {
 
   if (error) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <FetchError error={error} />
       </div>
     );
@@ -159,7 +159,7 @@ function ClubContainer({ competId, clubCode }) {
 
   if (!club) {
     return (
-      <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+      <div className="rounded-xl border border-border bg-card/70 backdrop-blur p-4 text-card-foreground">
         <EmptyState message="Aucun club trouvé." />
       </div>
     );
