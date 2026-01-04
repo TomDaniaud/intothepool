@@ -33,7 +33,7 @@ export function EngagementDetailsSheet({ open, onOpenChange, engagement, competI
 
         <DialogPrimitive.Content
           className={cn(
-            "fixed z-50 flex flex-col bg-background",
+            "fixed z-50 flex flex-col bg-background/80",
             "border border-border shadow-lg",
             // Mobile: bottom modal ~90% height
             "inset-x-0 bottom-0 h-[90dvh] w-full rounded-t-xl",

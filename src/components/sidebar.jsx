@@ -106,7 +106,7 @@ function SidebarBody({ onMobileAction } = {}) {
   }
 
   return (
-    <div className="flex h-full flex-col bg-sidebar text-sidebar-foreground w-full">
+    <div className="flex h-full flex-col bg-transparent text-sidebar-foreground w-full">
       <div className="flex items-center justify-between gap-3 px-4 py-4">
         <div className="min-w-0">
           <p className="text-sm font-medium text-muted-foreground">
@@ -142,8 +142,8 @@ function SidebarBody({ onMobileAction } = {}) {
                   type="button"
                   className={
                     item.id === value
-                      ? "w-full truncate rounded-md bg-accent px-3 py-2 text-left text-sm text-accent-foreground cursor-pointer"
-                      : "w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-accent hover:text-accent-foreground cursor-pointer"
+                      ? "w-full truncate rounded-md bg-accent/60 px-3 py-2 text-left text-sm text-accent-foreground cursor-pointer hover:bg-accent/90 hover:text-accent-foreground "
+                      : "w-full truncate rounded-md px-3 py-2 text-left text-sm hover:bg-accent/90 hover:text-accent-foreground cursor-pointer"
                   }
                   title={item.label}
                   onClick={() => handleSelectTab(item.id)}
@@ -175,7 +175,7 @@ function SidebarBody({ onMobileAction } = {}) {
       </ScrollArea>
 
       <div className="px-4 pb-4">
-        <div className="rounded-xl border border-border bg-card p-4 text-card-foreground">
+        <div className="rounded-xl border border-border bg-card/50 p-4 text-card-foreground">
           <div className="flex items-baseline justify-between gap-3 min-w-0">
             <div className="text-xs text-muted-foreground">Détails</div>
             <div className="truncate text-xs text-muted-foreground min-w-0 max-w-[60%] text-right">
@@ -185,17 +185,17 @@ function SidebarBody({ onMobileAction } = {}) {
 
           <div className="mt-2 grid gap-2 text-sm">
             <div className="flex items-center justify-between gap-3 min-w-0">
-              <span className="text-muted-foreground flex-shrink-0">Nom</span>
+              <span className="text-muted-foreground shrink-0">Nom</span>
               <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">{activeItem?.lastName || "—"}</span>
             </div>
             <div className="flex items-center justify-between gap-3 min-w-0">
-              <span className="text-muted-foreground flex-shrink-0">Prénom</span>
+              <span className="text-muted-foreground shrink-0">Prénom</span>
               <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">
                 {activeItem?.firstName || "—"}
               </span>
             </div>
             <div className="flex items-center justify-between gap-3 min-w-0">
-              <span className="text-muted-foreground flex-shrink-0">Compétition</span>
+              <span className="text-muted-foreground shrink-0">Compétition</span>
               <span className="font-medium truncate min-w-0 max-w-[70%] text-right overflow-hidden">
                 {capitalize(activeItem?.competition || "—")}
               </span>
@@ -214,7 +214,7 @@ function SidebarBody({ onMobileAction } = {}) {
  */
 export function Sidebar() {
   return (
-    <aside className="hidden h-screen w-1/5 shrink-0 border-r border-border bg-sidebar text-sidebar-foreground md:flex">
+    <aside className="hidden h-screen w-1/5 shrink-0 border-r border-border bg-sidebar/60 backdrop-blur-md text-sidebar-foreground md:flex">
       <SidebarBody />
     </aside>
   );
@@ -229,11 +229,11 @@ export function MobileSidebarTrigger() {
   return (
     <Sheet open={open} onOpenChange={setOpen}>
       <SheetTrigger asChild>
-        <Button variant="outline" size="icon" aria-label="Ouvrir l'historique">
+        <Button variant="outline" size="icon" aria-label="Ouvrir l'historique" className="bg-card/50">
           <PanelLeft className="size-4" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-80 p-0">
+      <SheetContent side="left" className="w-80 p-0 bg-sidebar/60 backdrop-blur-md">
         <SheetHeader className="sr-only">
           <SheetTitle>Historique</SheetTitle>
         </SheetHeader>

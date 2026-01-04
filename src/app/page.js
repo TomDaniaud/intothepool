@@ -166,14 +166,12 @@ export default function Home() {
   }
 
   return (
-    <main className="relative bg-background text-foreground">
-      <div className="pointer-events-none absolute inset-0">
-        <div className="absolute inset-0 bg-[radial-gradient(90%_60%_at_50%_0%,color-mix(in_oklab,var(--color-accent)_70%,transparent),transparent_60%)]" />
-        <div className="absolute inset-0 bg-[linear-gradient(to_bottom,transparent,color-mix(in_oklab,var(--color-foreground)_2%,transparent))]" />
+    <main className="relative text-foreground">
+      <div className="pointer-events-none absolute inset-0 z-0">
       </div>
 
-      <section className="relative mx-auto flex w-full max-w-5xl flex-col items-center px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-20">
-        <div className="mb-3 w-full rounded-2xl border border-ring/25 bg-ring/10 p-4 text-sm text-foreground/80 backdrop-blur sm:mt-8 sm:p-5">
+      <section className="relative z-10 mx-auto flex w-full max-w-5xl flex-col items-center px-4 pb-14 pt-10 sm:px-6 sm:pb-20 sm:pt-20">
+        <div className="mb-3 w-full rounded-2xl border border-ring/25 bg-ring/10 p-4 text-sm text-foreground/80 backdrop-blur-md sm:mt-8 sm:p-5">
           <div className="flex items-start gap-3">
             <Info className="size-4 shrink-0 mt-0.5" />
             <div className="min-w-0">
@@ -187,7 +185,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-full rounded-2xl border border-border bg-background/70 p-5 backdrop-blur sm:p-10">
+        <div className="w-full rounded-2xl border border-border bg-background/70 p-5 backdrop-blur-md sm:p-10">
           <div className="flex flex-col gap-4">
             <p className="text-sm font-medium text-muted-foreground">Accueil</p>
             <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
@@ -207,7 +205,7 @@ export default function Home() {
                 autoComplete="family-name"
                 placeholder="Daniaud"
                 value={lastName}
-                className={cn(error && 'ring-2 ring-red-300')}
+                className={cn('placeholder:italic', error && 'ring-2 ring-red-300')}
                 onChange={(e) => { setLastName(e.target.value); setError(null); }}
               />
             </div>
@@ -220,7 +218,7 @@ export default function Home() {
                 autoComplete="given-name"
                 placeholder="Nora"
                 value={firstName}
-                className={cn(error && 'ring-2 ring-red-300')}
+                className={cn('placeholder:italic', error && 'ring-2 ring-red-300')}
                 onChange={(e) => { setFirstName(e.target.value); setError(null); }}
               />
             </div>
@@ -236,8 +234,9 @@ export default function Home() {
               ) : (
                 <Input
                   id="competFilter"
-                  placeholder="Filtrer par lieu..."
+                  placeholder="Annecy"
                   value={filterQuery}
+                  className="placeholder:italic"
                   onChange={(e) => { handleFilterChange(e.target.value); setError(null); }}
                 />
               )}

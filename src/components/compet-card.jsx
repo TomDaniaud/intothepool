@@ -76,7 +76,7 @@ export function CompetCard({ competition, onClick, selected = false, className }
       type="button"
       onClick={onClick}
       className={cn(
-        "group relative flex h-[140px] w-full overflow-hidden rounded-lg border border-border bg-card text-left transition-all duration-200",
+        "group relative flex h-35 w-full overflow-hidden rounded-lg border border-border bg-card/70 backdrop-blur-md text-left transition-all duration-200",
         "hover:border-ring hover:shadow-sm",
         selected && "ring-2 ring-ring border-ring",
         className
@@ -84,7 +84,7 @@ export function CompetCard({ competition, onClick, selected = false, className }
     >
       {/* Image à gauche */}
       {image && (
-        <div className="relative h-full w-[100px] shrink-0 overflow-hidden bg-muted">
+        <div className="relative h-full w-20 shrink-0 overflow-hidden bg-muted">
           <img
             src={image}
             alt={location || name}
@@ -158,7 +158,7 @@ export function CompetCardSelected({ competition, onCancel, className }) {
   return (
     <div
       className={cn(
-        "relative flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background px-3 text-sm",
+        "relative flex h-9 w-full items-center gap-2 rounded-md border border-input bg-background/60 px-3 text-sm",
         className
       )}
     >

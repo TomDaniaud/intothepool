@@ -10,7 +10,6 @@ import { Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { Share2, Check } from "lucide-react";
 
-import { CompetitionBackground } from "@/components/competition/competition-background";
 import { EngagementsPanelContainer } from "@/components/competition/engagements-panel";
 import { EngagementDetailsSheet } from "@/components/competition/modalsheet";
 import { SwimmerClubPanelContainer } from "@/components/competition/swimmer-club-panel";
@@ -90,9 +89,6 @@ function CompetitionPageContent() {
 
   return (
     <>
-      <div className="absolute w-full h-full">
-        <CompetitionBackground level={competition?.level} />
-      </div>
       <main className="relative isolate mx-auto w-full max-w-6xl px-6 py-10">
 
         <div className="relative z-10">
@@ -101,11 +97,11 @@ function CompetitionPageContent() {
           <h1 className="text-balance text-2xl font-semibold tracking-tight">
             Compétition
           </h1>
-          <p className="mt-1 text-sm text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground  backdrop-blur-xs">
             Visualisation des engagements et informations du nageur.
           </p>
         </div>
-        <Button variant="outline" size="sm" onClick={handleShare} className="shrink-0">
+        <Button variant="outline" size="sm" onClick={handleShare} className="shrink-0 bg-card/70 backdrop-blur">
           {copied ? (
             <>
               <Check className="size-4 text-green-500" />
