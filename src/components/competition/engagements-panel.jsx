@@ -45,7 +45,7 @@ function EngagementsPanelSkeleton() {
 function EngagementsPanel({ engagements, onSelect }) {
   const isMob = isMobile();
   return (
-    <section className="rounded-xl border border-border bg-card/70 backdrop-blur text-card-foreground">
+    <section className="rounded-xl border border-border bg-card/80 backdrop-blur-lg text-card-foreground">
       <div className="px-4 py-4">
         <div className="text-sm font-semibold">Engagements</div>
         <div className="text-sm text-muted-foreground">

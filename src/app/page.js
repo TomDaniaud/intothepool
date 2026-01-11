@@ -185,7 +185,7 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="w-full rounded-2xl border border-border bg-background/70 p-5 backdrop-blur-md sm:p-10">
+        <div className="w-full rounded-2xl border border-border bg-background/80 p-5 backdrop-blur-xl sm:p-10">
           <div className="flex flex-col gap-4">
             <p className="text-sm font-medium text-muted-foreground">Accueil</p>
             <h1 className="text-balance text-3xl font-semibold tracking-tight sm:text-5xl">
