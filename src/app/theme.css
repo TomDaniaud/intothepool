@@ -1,0 +1,51 @@
+/*
+ * Palette principale d'Intothepool.
+ *
+ * Modifiez uniquement ces couleurs pour personnaliser l'interface.
+ * Les variables "theme" de globals.css utilisent cette palette.
+ */
+:root {
+  --palette-background: #102e2a;
+  --palette-foreground: #2f6ba2;
+  --palette-card: #912c2c;
+  --palette-primary: #007c91;
+  --palette-primary-foreground: #347482;
+  --palette-secondary: #25184f;
+  --palette-secondary-foreground: #075e69;
+  --palette-muted: #e8f4f8;
+  --palette-muted-foreground: #efbf50;
+  --palette-accent: #ffe4ef;
+  --palette-accent-foreground: #1ea417;
+  --palette-destructive: #bf00ff;
+  --palette-border: #b9dfe6;
+  --palette-input: #c9e8ed;
+  --palette-ring: #0ea5e9;
+  --palette-sidebar: #e4f7fb;
+  --palette-sidebar-foreground: #123b52;
+  --palette-sidebar-primary: #007c91;
+  --palette-sidebar-accent: #c9f1f0;
+  --palette-sidebar-border: #b9dfe6;
+}
+
+.dark {
+  --palette-background: #081c2c;
+  --palette-foreground: #e6f7ff;
+  --palette-card: #0d2b40;
+  --palette-primary: #41d6d1;
+  --palette-primary-foreground: #06242c;
+  --palette-secondary: #123f52;
+  --palette-secondary-foreground: #baf7f1;
+  --palette-muted: #123247;
+  --palette-muted-foreground: #9cb9c9;
+  --palette-accent: #512849;
+  --palette-accent-foreground: #ffd2e6;
+  --palette-destructive: #fb7185;
+  --palette-border: #22506a;
+  --palette-input: #1b465b;
+  --palette-ring: #38bdf8;
+  --palette-sidebar: #061827;
+  --palette-sidebar-foreground: #e6f7ff;
+  --palette-sidebar-primary: #41d6d1;
+  --palette-sidebar-accent: #123f52;
+  --palette-sidebar-border: #22506a;
+}
